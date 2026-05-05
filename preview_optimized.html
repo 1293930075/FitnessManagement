@@ -1,0 +1,2029 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>碳循环减脂/训练计划</title>
+
+  <!-- Vue3 CDN（替代 Alpine.js，承担完整数据驱动渲染） -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.4.21/vue.global.prod.min.js"></script>
+  <!-- GSAP 保留：只用于入场动画和进度条动画 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+
+  <style>
+    /* ══════════════════════════════
+       TOKENS
+    ══════════════════════════════ */
+    :root {
+      --bg:        #09101d;
+      --card:      rgba(255,255,255,.055);
+      --card-hi:   rgba(255,255,255,.09);
+      --stroke:    rgba(255,255,255,.09);
+      --stroke2:   rgba(255,255,255,.055);
+      --text:      #eaf1ff;
+      --muted:     rgba(234,241,255,.68);
+      --muted2:    rgba(234,241,255,.46);
+      --gold:      #f3c66d;
+      --gold2:     #f7dd9f;
+      --blue:      #74b3ff;
+      --green:     #7be3b0;
+      --red:       #ff8d8d;
+      --shadow:    0 24px 60px rgba(0,0,0,.38);
+      --r:         26px;
+      --r-sm:      18px;
+      --r-xs:      12px;
+      --max:       1240px;
+      --font:      ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+                   "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0 }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100% }
+    body {
+      font-family: var(--font);
+      color: var(--text);
+      background: var(--bg);
+      min-height: 100vh;
+      overflow-x: hidden;
+      /* 【优化①】开启 GPU 合成层，让滚动走合成线程而非主线程 */
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
+      text-rendering: optimizeLegibility;
+    }
+
+    /* ══════════════════════════════
+       【优化②】纯 CSS 背景替代 Canvas JS 动画
+       用 CSS animation 驱动，完全在合成线程，
+       不占用 JS 主线程，不触发重绘
+    ══════════════════════════════ */
+    .bg-layer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      /* 基础深色底 */
+      background: var(--bg);
+    }
+    /* 三个色晕用伪元素 + CSS animation 实现浮动 */
+    .bg-layer::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 12% 10%, rgba(116,179,255,.13), transparent),
+        radial-gradient(ellipse 50% 45% at 88% 18%, rgba(243,198,109,.11), transparent),
+        radial-gradient(ellipse 45% 40% at 50% 88%, rgba(123,227,176,.08), transparent);
+      animation: orbFloat 18s ease-in-out infinite alternate;
+      will-change: transform;
+    }
+    @keyframes orbFloat {
+      0%   { transform: translate(0, 0) scale(1) }
+      33%  { transform: translate(1.5%, 1%) scale(1.02) }
+      66%  { transform: translate(-1%, 1.5%) scale(.98) }
+      100% { transform: translate(1%, -1%) scale(1.01) }
+    }
+
+    /* ══════════════════════════════
+       LAYOUT
+    ══════════════════════════════ */
+    .shell {
+      position: relative;
+      z-index: 1;
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 28px 18px calc(48px + env(safe-area-inset-bottom));
+    }
+
+    /* ══════════════════════════════
+       GLASS SURFACE
+    ══════════════════════════════ */
+    .glass {
+      background: linear-gradient(160deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+      border: 1px solid var(--stroke);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: var(--shadow);
+      border-radius: var(--r);
+      /* 【优化③】提升为独立合成层，减少与其他层互相触发重绘 */
+      will-change: transform;
+      transform: translateZ(0);
+    }
+    .card {
+      background: linear-gradient(160deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+      border: 1px solid var(--stroke2);
+      border-radius: var(--r-sm);
+    }
+    .card-xs {
+      background: rgba(255,255,255,.045);
+      border: 1px solid var(--stroke2);
+      border-radius: var(--r-xs);
+    }
+
+    /* ══════════════════════════════
+       HERO
+    ══════════════════════════════ */
+    .hero {
+      display: grid;
+      grid-template-columns: 1.35fr .95fr;
+      gap: 18px;
+      align-items: stretch;
+      margin-bottom: 18px;
+    }
+    .hero-copy {
+      padding: 28px 28px 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-copy::before {
+      content: "";
+      position: absolute; inset: -2px;
+      background:
+        radial-gradient(circle at 18% 14%, rgba(243,198,109,.22), transparent 28%),
+        radial-gradient(circle at 88% 18%, rgba(116,179,255,.20), transparent 26%);
+      pointer-events: none;
+      border-radius: inherit;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.08);
+      color: var(--gold2);
+      font-size: 12px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      position: relative;
+      z-index: 1;
+    }
+    .hero h1 {
+      margin: 14px 0 10px;
+      font-size: clamp(28px, 4vw, 54px);
+      line-height: 1.06;
+      letter-spacing: -.03em;
+      position: relative;
+      z-index: 1;
+    }
+    .hero p {
+      margin: 0;
+      max-width: 56ch;
+      color: var(--muted);
+      line-height: 1.75;
+      font-size: 14px;
+      position: relative;
+      z-index: 1;
+    }
+    .hero-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+      position: relative;
+      z-index: 1;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.08);
+      color: var(--text);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .pill::before {
+      content: "";
+      width: 8px; height: 8px; border-radius: 999px;
+      background: var(--gold);
+      box-shadow: 0 0 0 6px rgba(243,198,109,.12);
+      flex-shrink: 0;
+    }
+    .hero-panel {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-panel::after {
+      content: "";
+      position: absolute;
+      right: -40px; top: -40px;
+      width: 170px; height: 170px;
+      background: radial-gradient(circle, rgba(243,198,109,.22), transparent 60%);
+      pointer-events: none;
+      border-radius: 50%;
+    }
+    .hero-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      position: relative;
+      z-index: 1;
+    }
+    .hero-title { display: flex; flex-direction: column; gap: 4px }
+    .hero-title strong { font-size: 18px; letter-spacing: -.02em }
+    .hero-title span { color: var(--muted2); font-size: 12px }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      border: 1px solid rgba(255,255,255,.1);
+      background: rgba(255,255,255,.05);
+      color: var(--gold2);
+    }
+    .hero-badge i {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: currentColor;
+      display: inline-block;
+      box-shadow: 0 0 0 6px rgba(243,198,109,.12);
+    }
+    .hero-metrics {
+      display: grid;
+      grid-template-columns: repeat(2,1fr);
+      gap: 10px;
+      position: relative;
+      z-index: 1;
+    }
+    .mini-card {
+      background: linear-gradient(160deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 20px;
+      padding: 14px 14px 13px;
+      min-height: 84px;
+    }
+    .mini-card .k {
+      color: var(--muted2);
+      font-size: 12px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .mini-card .k::before {
+      content: "";
+      width: 8px; height: 8px; border-radius: 999px;
+      background: var(--blue);
+      box-shadow: 0 0 0 5px rgba(116,179,255,.10);
+      flex-shrink: 0;
+    }
+    .mini-card .v {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -.03em;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+    .mini-card .u {
+      font-size: 12px;
+      color: var(--muted2);
+      font-weight: 500;
+    }
+    .hero-foot {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      position: relative;
+      z-index: 1;
+    }
+    .hero-chip {
+      flex: 1 1 140px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.08);
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .hero-chip strong { color: var(--text); font-size: 13px }
+
+    /* ══════════════════════════════
+       STICKY TABS
+       【优化④】滚动时用 .is-scrolling 类临时关闭 backdrop-filter
+       消灭 blur 在快速滚动时造成的合成层撕裂
+    ══════════════════════════════ */
+    .tabs {
+      display: flex;
+      gap: 10px;
+      padding: 10px;
+      margin-bottom: 18px;
+      position: sticky;
+      top: 10px;
+      z-index: 12;
+      overflow-x: auto;
+      scrollbar-width: none;
+      background: linear-gradient(160deg, rgba(13,20,38,.85), rgba(9,16,29,.92));
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--stroke);
+      border-radius: var(--r-sm);
+      box-shadow: 0 8px 32px rgba(0,0,0,.28);
+      /* 【关键】transition 让 blur 恢复时有平滑过渡，不突兀 */
+      transition: backdrop-filter .3s ease, -webkit-backdrop-filter .3s ease;
+    }
+    /* 滚动期间降级：关闭 blur，改为不透明背景，避免合成撕裂 */
+    .tabs.is-scrolling {
+      backdrop-filter: blur(0px) !important;
+      -webkit-backdrop-filter: blur(0px) !important;
+      background: rgba(9,16,29,.96) !important;
+    }
+    .tabs::-webkit-scrollbar { display: none }
+    .tab {
+      flex: 1 1 140px;
+      min-width: 132px;
+      padding: 13px 16px;
+      border-radius: 14px;
+      border: 1px solid transparent;
+      background: rgba(255,255,255,.03);
+      color: var(--muted);
+      font-size: 14px;
+      font-family: var(--font);
+      cursor: pointer;
+      /* 【优化⑤】只对 transform 做 transition，避免触发重绘的属性（如 background）频繁 transition */
+      transition: background .22s ease, color .22s ease, border-color .22s ease, transform .18s ease;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .tab:hover {
+      transform: translateY(-1px);
+      border-color: rgba(255,255,255,.10);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+    }
+    .tab.on {
+      background: linear-gradient(160deg, rgba(243,198,109,.22), rgba(243,198,109,.10));
+      border-color: rgba(243,198,109,.30);
+      color: var(--text);
+      box-shadow: 0 8px 24px rgba(243,198,109,.10);
+    }
+    .tab.on::before {
+      content: "";
+      display: inline-block;
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--gold);
+      margin-right: 10px;
+      vertical-align: middle;
+      box-shadow: 0 0 0 5px rgba(243,198,109,.1);
+    }
+
+    /* ══════════════════════════════
+       SECTION 切换
+       【优化⑥】用 v-show 而非 display:none/block 切换，
+       配合 CSS transition 实现过渡，Vue 控制 opacity
+    ══════════════════════════════ */
+    .section {
+      /* Vue v-show 会控制 display，这里的 transition 针对 opacity */
+    }
+    .fade-enter-active, .fade-leave-active {
+      transition: opacity .28s ease, transform .28s ease;
+    }
+    .fade-enter-from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    .fade-leave-to {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+
+    /* ══════════════════════════════
+       WEEK GRID & DAY CARDS
+    ══════════════════════════════ */
+    .week {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0,1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .dc {
+      border-radius: 24px;
+      border: 1px solid var(--stroke2);
+      padding: 16px 16px 14px;
+      cursor: pointer;
+      background: linear-gradient(160deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      /* 【优化⑦】只 transition transform，不做 background/border 的 transition
+         background 变化会强制合成层更新，改为直接切换 */
+      transition: transform .22s cubic-bezier(.34,1.56,.64,1), box-shadow .22s ease;
+      min-height: 120px;
+      position: relative;
+      overflow: hidden;
+      will-change: transform;
+    }
+    .dc::before {
+      content: "";
+      position: absolute;
+      inset: auto -18px -36px auto;
+      width: 120px; height: 120px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,255,255,.07), transparent 65%);
+      pointer-events: none;
+    }
+    .dc:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 16px 32px rgba(0,0,0,.22);
+    }
+    /* sel 状态：直接切换，不 transition border/background（避免重绘） */
+    .dc.sel {
+      border-color: rgba(116,179,255,.45);
+      background: linear-gradient(160deg, rgba(116,179,255,.18), rgba(255,255,255,.03));
+      box-shadow: 0 16px 36px rgba(116,179,255,.14);
+    }
+    .dlabel {
+      font-size: 12px;
+      color: var(--muted2);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .dlabel::before {
+      content: "";
+      width: 8px; height: 8px; border-radius: 999px;
+      background: rgba(255,255,255,.24);
+    }
+    .dname {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 12px;
+      line-height: 1.35;
+      letter-spacing: -.02em;
+      min-height: 44px;
+    }
+
+    /* badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-weight: 700;
+      letter-spacing: .02em;
+    }
+    .bh { background: linear-gradient(160deg, #ffd67d, #efbb4e); color: #4a3204 }
+    .bm { background: linear-gradient(160deg, #bfe0ff, #7eb6f2); color: #0e3460 }
+    .bl { background: linear-gradient(160deg, #cef0a2, #9bd56f); color: #234809 }
+    .bw { background: linear-gradient(160deg, #ddd9cf, #b9b3a6); color: #4a4741 }
+
+    .tagline {
+      margin: 0 0 16px;
+      color: var(--muted2);
+      font-size: 13px;
+      line-height: 1.7;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .tagline::before {
+      content: "";
+      width: 9px; height: 9px; border-radius: 999px;
+      background: var(--gold);
+      box-shadow: 0 0 0 5px rgba(243,198,109,.12);
+      flex-shrink: 0;
+    }
+
+    /* ══════════════════════════════
+       DETAIL PANEL
+    ══════════════════════════════ */
+    .panel {
+      background: linear-gradient(160deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+      border: 1px solid var(--stroke);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: var(--shadow);
+      border-radius: 30px;
+      padding: 18px;
+      will-change: transform;
+      transform: translateZ(0);
+    }
+    .phead {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .p-left { display: flex; align-items: center; gap: 12px; flex-wrap: wrap }
+    .ptitle { font-size: 22px; font-weight: 800; letter-spacing: -.03em }
+    .wtype {
+      font-size: 12px;
+      color: var(--muted);
+      padding: 7px 12px;
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 999px;
+      background: rgba(255,255,255,.04);
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.08);
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .chip strong { color: var(--text) }
+
+    .mgrid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0,1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .mc {
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(160deg, rgba(255,255,255,.09), rgba(255,255,255,.04));
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 22px;
+      padding: 16px 16px 14px;
+      min-height: 92px;
+    }
+    .mc::before {
+      content: "";
+      position: absolute;
+      inset: auto -28px -28px auto;
+      width: 110px; height: 110px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,255,255,.10), transparent 70%);
+      pointer-events: none;
+    }
+    .ml {
+      font-size: 12px;
+      color: var(--muted2);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .ml::before {
+      content: "";
+      width: 8px; height: 8px; border-radius: 999px;
+      background: var(--blue);
+      box-shadow: 0 0 0 5px rgba(116,179,255,.10);
+      flex-shrink: 0;
+    }
+    .mv {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -.04em;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      line-height: 1;
+    }
+    .mu { font-size: 12px; color: var(--muted2); font-weight: 600 }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+    .block {
+      background: rgba(255,255,255,.034);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 24px;
+      padding: 14px;
+    }
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 18px 0 12px;
+    }
+    .section-title .name {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: -.02em;
+    }
+    .section-title .name::before {
+      content: "";
+      width: 10px; height: 10px; border-radius: 999px;
+      background: var(--gold);
+      box-shadow: 0 0 0 6px rgba(243,198,109,.10);
+      flex-shrink: 0;
+    }
+    .section-title .desc { font-size: 12px; color: var(--muted2); white-space: nowrap }
+
+    .mlist { display: flex; flex-direction: column; gap: 10px }
+    .mrow {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      padding: 14px;
+      border: 1px solid rgba(255,255,255,.07);
+      background: rgba(255,255,255,.04);
+      border-radius: 20px;
+      transition: background .2s ease, border-color .2s ease;
+    }
+    .mrow:hover {
+      border-color: rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+    }
+    .mtime {
+      font-size: 12px;
+      color: var(--gold2);
+      min-width: 76px;
+      flex: 0 0 auto;
+      padding-top: 2px;
+      line-height: 1.5;
+      font-weight: 700;
+    }
+    .mcontent { flex: 1; min-width: 0 }
+    .mname {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 4px;
+      letter-spacing: -.01em;
+    }
+    .mitems {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.75;
+      word-break: break-word;
+    }
+
+    .elist {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 10px;
+    }
+    .erow {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 14px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: 18px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .en { color: var(--text); font-weight: 700 }
+    .es { color: var(--muted); text-align: right; max-width: 60% }
+
+    .tip {
+      margin-top: 14px;
+      padding: 15px 16px;
+      background: linear-gradient(160deg, rgba(243,198,109,.13), rgba(255,255,255,.04));
+      border: 1px solid rgba(243,198,109,.18);
+      border-radius: 20px;
+      font-size: 13px;
+      color: rgba(234,241,255,.84);
+      line-height: 1.8;
+    }
+    .callout {
+      margin-top: 14px;
+      padding: 14px 16px;
+      border-radius: 22px;
+      border: 1px solid rgba(116,179,255,.18);
+      background: linear-gradient(160deg, rgba(116,179,255,.12), rgba(255,255,255,.04));
+      color: rgba(234,241,255,.86);
+      line-height: 1.8;
+      font-size: 13px;
+    }
+
+    .askbtn {
+      margin-top: 16px;
+      padding: 11px 16px;
+      font-size: 13px;
+      font-family: var(--font);
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      color: var(--text);
+      cursor: pointer;
+      transition: transform .18s ease, background .18s ease, border-color .18s ease;
+    }
+    .askbtn:hover {
+      transform: translateY(-1px);
+      background: rgba(255,255,255,.07);
+      border-color: rgba(255,255,255,.16);
+    }
+    .askbtn:active { transform: scale(.97) }
+
+    /* ══════════════════════════════
+       MACRO TAB
+    ══════════════════════════════ */
+    .macro-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 14px;
+      margin-top: 6px;
+    }
+    .macro-card {
+      border-radius: 24px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: linear-gradient(160deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+      padding: 16px;
+    }
+    .macro-card .head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+    .macro-card .head strong { font-size: 15px; letter-spacing: -.02em }
+    .macro-card .head span { color: var(--muted2); font-size: 12px; text-align: right }
+    .bar-track {
+      height: 10px;
+      width: 100%;
+      border-radius: 999px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.06);
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, rgba(116,179,255,.95), rgba(243,198,109,.95));
+      transform-origin: left;
+    }
+    .macro-card p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.8 }
+
+    /* ══════════════════════════════
+       FOOD TAB
+    ══════════════════════════════ */
+    .food-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap: 14px;
+    }
+    .food-section {
+      padding: 16px;
+      border-radius: 24px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.034);
+    }
+    .food-section h3 { margin: 0 0 12px; font-size: 16px; letter-spacing: -.02em }
+    .food-section .sub {
+      margin-top: -4px;
+      margin-bottom: 12px;
+      font-size: 12px;
+      color: var(--muted2);
+    }
+    .food-item {
+      padding: 12px 13px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.07);
+      margin-bottom: 10px;
+    }
+    .food-item:last-child { margin-bottom: 0 }
+    .food-item strong { display: block; margin-bottom: 4px; font-size: 13px; color: var(--text) }
+    .food-item span { display: block; color: var(--muted); font-size: 12.5px; line-height: 1.7 }
+
+    /* ══════════════════════════════
+       NOTES TAB
+    ══════════════════════════════ */
+    .notes-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 14px;
+    }
+    .note-card {
+      padding: 16px;
+      border-radius: 24px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: linear-gradient(160deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+    }
+    .note-card h3 { margin: 0 0 10px; font-size: 16px; letter-spacing: -.02em }
+    .note-card .item {
+      display: flex;
+      gap: 10px;
+      padding: 11px 0;
+      border-top: 1px solid rgba(255,255,255,.06);
+    }
+    .note-card .item:first-of-type { border-top: none; padding-top: 0 }
+    .note-card .item .key {
+      width: 78px; flex: 0 0 auto;
+      color: var(--gold2); font-size: 12px; font-weight: 700;
+    }
+    .note-card .item .val { color: var(--muted); font-size: 13px; line-height: 1.75 }
+
+    .footer-space { height: 12px }
+
+    /* ══════════════════════════════
+       EXERCISE GUIDE
+    ══════════════════════════════ */
+    .guide-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 12px;
+    }
+    .guide-card {
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: linear-gradient(160deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+      padding: 14px;
+    }
+    .guide-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+    .guide-title {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .guide-title strong { font-size: 14px; letter-spacing: -.02em }
+    .guide-title span { font-size: 12px; color: var(--muted2) }
+    .guide-badges {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: flex-end;
+      flex: 0 0 auto;
+    }
+    .guide-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.08);
+      color: var(--gold2);
+      font-size: 11px;
+      white-space: nowrap;
+    }
+    .guide-badge.gray { color: var(--muted); }
+    .guide-section {
+      margin-top: 12px;
+    }
+    .guide-section h4 {
+      font-size: 12px;
+      color: var(--text);
+      margin: 0 0 8px;
+      letter-spacing: -.01em;
+    }
+    .guide-list {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+      font-size: 12.5px;
+      line-height: 1.75;
+    }
+    .guide-list li { margin-bottom: 6px; }
+    .guide-list li:last-child { margin-bottom: 0; }
+    .mw-link {
+        font-size: 12px;
+        color: var(--blue);
+        text-decoration: none;
+        opacity: 0.85;
+        transition: all 0.2s ease;
+    }
+
+    .mw-link:hover {
+        opacity: 1;
+        text-decoration: underline;
+    }
+    /* ══════════════════════════════
+       RESPONSIVE
+    ══════════════════════════════ */
+    @media (max-width: 1080px) {
+      .hero { grid-template-columns: 1fr }
+      .week { grid-template-columns: repeat(2, minmax(0,1fr)) }
+      .mgrid { grid-template-columns: repeat(2, minmax(0,1fr)) }
+      .food-grid, .notes-grid, .macro-grid, .split, .guide-grid { grid-template-columns: 1fr }
+      .elist { grid-template-columns: 1fr }
+    }
+    @media (max-width: 640px) {
+      .shell { padding: 16px 12px calc(34px + env(safe-area-inset-bottom)) }
+      .hero-copy, .hero-panel, .panel { border-radius: 22px; padding-left: 16px; padding-right: 16px }
+      .tabs { position: relative; top: auto; gap: 8px; padding: 8px }
+      .tab { flex: 0 0 calc(50% - 4px); min-width: calc(50% - 4px); padding: 12px 10px }
+      .week, .mgrid { grid-template-columns: 1fr }
+      .hero-metrics { grid-template-columns: 1fr; gap: 8px }
+      .hero-chip { flex-basis: 100% }
+      .hero h1 { font-size: clamp(26px, 8vw, 38px) }
+      .hero-title strong { font-size: 16px }
+      .dc, .mini-card, .macro-card, .food-section, .note-card, .block { border-radius: 18px }
+      .panel { border-radius: 20px }
+      .mrow, .erow, .food-item, .item { border-radius: 14px }
+      .mtime { min-width: 66px }
+      .es { max-width: 58% }
+      .phead, .hero-top, .section-title { align-items: flex-start }
+      .footer-space { height: 24px }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto }
+      .bg-layer::before { animation: none }
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- 【优化②】纯 CSS 背景层，替代原来的 Canvas + JS 动画循环 -->
+  <div class="bg-layer"></div>
+
+  <!-- Vue3 挂载点 -->
+  <div id="app">
+    <main class="shell">
+
+      <!-- HERO：响应式数据绑定，currentDay 变化时自动更新 -->
+      <section class="hero">
+        <div class="hero-copy glass">
+          <div class="eyebrow">CARB CYCLE · TRAINING SYSTEM</div>
+          <h1>碳循环完整方案 v2</h1>
+          <p>把你原本的训练、饮食、宏量规则保留下来，用更高级的视觉层级重新组织成一张更容易执行、也更像专业教练后台的总控台。</p>
+          <div class="hero-actions">
+            <div class="pill">工作日晚练 / 周末下午练</div>
+            <div class="pill">无蛋白粉</div>
+            <div class="pill">高、中、低碳日清晰分层</div>
+          </div>
+        </div>
+
+        <!-- 【Vue优化】原来需要 8 次 getElementById + textContent 赋值
+             现在只需绑定 currentDay，Vue diff 自动只更新变化的文本节点 -->
+        <div class="hero-panel glass">
+          <div class="hero-top">
+            <div class="hero-title">
+              <strong>{{ currentDay.label }} · {{ currentDay.name }}</strong>
+              <span>{{ currentDay.type }} · 当前选中日</span>
+            </div>
+            <div class="hero-badge"><i></i><span>{{ carbLabel(currentDay.carb) }}</span></div>
+          </div>
+          <div class="hero-metrics">
+            <div class="mini-card">
+              <div class="k">热量</div>
+              <div class="v"><span class="hero-num">{{ currentDay.cal }}</span><span class="u">kcal</span></div>
+            </div>
+            <div class="mini-card">
+              <div class="k">蛋白质</div>
+              <div class="v"><span class="hero-num">{{ currentDay.pro }}</span><span class="u">g</span></div>
+            </div>
+            <div class="mini-card">
+              <div class="k">碳水</div>
+              <div class="v"><span class="hero-num">{{ currentDay.carb_g }}</span><span class="u">g</span></div>
+            </div>
+            <div class="mini-card">
+              <div class="k">脂肪</div>
+              <div class="v"><span class="hero-num">{{ currentDay.fat }}</span><span class="u">g</span></div>
+            </div>
+          </div>
+          <div class="hero-foot">
+            <div class="hero-chip"><span>训练类型</span><strong>{{ currentDay.type }}</strong></div>
+            <div class="hero-chip"><span>今日重点</span><strong>{{ tipShort(currentDay.tip) }}</strong></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TABS：【Vue优化】v-for 渲染，:class 绑定 on 状态 -->
+      <div class="tabs" ref="tabsEl">
+        <button
+          v-for="tab in tabs"
+          :key="tab.id"
+          class="tab"
+          :class="{ on: activeTab === tab.id }"
+          @click="switchTab(tab.id)"
+        >{{ tab.label }}</button>
+      </div>
+
+
+      <!-- PLAN TAB -->
+      <transition name="fade" mode="out-in">
+        <section v-show="activeTab === 'plan'" class="section">
+          <div class="tagline">点选任意一天查看完整训练与饮食结构，右侧面板会同步切换关键数据。</div>
+
+          <div class="week">
+            <div
+              v-for="(day, i) in days"
+              :key="day.label"
+              class="dc"
+              :class="{ sel: selIdx === i }"
+              @click="pick(i)"
+            >
+              <div class="dlabel">{{ day.label }}</div>
+              <div class="dname">{{ day.name }}</div>
+              <span class="badge" :class="carbClass(day.carb)">{{ carbLabel(day.carb) }}</span>
+            </div>
+          </div>
+
+          <div class="panel" ref="dpanelEl">
+            <div class="phead">
+              <div class="p-left">
+                <span class="ptitle">{{ currentDay.name }}</span>
+                <span class="badge" :class="carbClass(currentDay.carb)">{{ carbLabel(currentDay.carb) }}</span>
+                <span class="wtype">{{ currentDay.type }}</span>
+              </div>
+              <div class="chip">今日执行重点：<strong>{{ dayFocus(currentDay.carb) }}</strong></div>
+            </div>
+
+            <div class="mgrid">
+              <div class="mc">
+                <div class="ml">热量</div>
+                <div class="mv">{{ currentDay.cal }}<span class="mu"> kcal</span></div>
+              </div>
+              <div class="mc">
+                <div class="ml">蛋白质</div>
+                <div class="mv">{{ currentDay.pro }}<span class="mu"> g</span></div>
+              </div>
+              <div class="mc">
+                <div class="ml">碳水</div>
+                <div class="mv">{{ currentDay.carb_g }}<span class="mu"> g</span></div>
+              </div>
+              <div class="mc">
+                <div class="ml">脂肪</div>
+                <div class="mv">{{ currentDay.fat }}<span class="mu"> g</span></div>
+              </div>
+            </div>
+
+            <div class="split">
+              <div class="block">
+                <div class="section-title">
+                  <div class="name">饮食安排</div>
+                  <div class="desc">按时间顺序执行</div>
+                </div>
+                <div class="mlist">
+                  <div class="mrow" v-for="m in currentDay.meals" :key="m.time">
+                    <div class="mtime">{{ m.time }}</div>
+                    <div class="mcontent">
+                      <div class="mname">{{ m.name }}</div>
+                      <div class="mitems">{{ m.items }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="block">
+                <div class="section-title">
+                  <div class="name">训练安排</div>
+                  <div class="desc">组数、次数与要点</div>
+                </div>
+                <div class="elist">
+                  <div class="erow" v-for="e in currentDay.exercises" :key="e.name">
+                        <a class="mw-link" :href="getMuscleWikiLink(e.name)" target="_blank">
+                           <span class="en">{{ e.name }}</span>
+                        </a>
+                        <span class="es">{{ e.sets }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- <div class="block" style="grid-column: 1 / -1;">
+                <div class="section-title">
+                  <div class="name">动作讲解</div>
+                  <div class="desc">参考 MuscleWiki 中文动作库</div>
+                </div>
+                <div class="guide-grid">
+                  <div class="guide-card" v-for="g in currentGuides" :key="g.title">
+                    <div class="guide-head">
+                      <div class="guide-title">
+                        <strong>{{ g.title }}</strong>
+                        <span>{{ g.target }} · {{ g.level }}</span>
+                      </div>
+                      <div class="guide-badges">
+                        <span class="guide-badge">{{ g.count }} 步</span>
+                        <span class="guide-badge gray">{{ g.source }}</span>
+                      </div>
+                    </div>
+                    <div class="guide-section">
+                      <h4>动作步骤</h4>
+                      <ol class="guide-list">
+                        <li v-for="step in g.steps" :key="step">{{ step }}</li>
+                      </ol>
+                    </div>
+                    <div class="guide-section">
+                      <h4>关键提示</h4>
+                      <ol class="guide-list">
+                        <li v-for="cue in g.cues" :key="cue">{{ cue }}</li>
+                      </ol>
+                    </div>
+                    <div class="guide-section">
+                      <h4>常见错误</h4>
+                      <ol class="guide-list">
+                        <li v-for="err in g.errors" :key="err">{{ err }}</li>
+                      </ol>
+                    </div>
+                  </div>
+                </div>
+              </div> -->
+            </div>
+
+            <div class="tip">{{ currentDay.tip }}</div>
+            <button class="askbtn" @click="sendPrompt('详细解释' + currentDay.name + '的训练动作要领和注意事项')">
+              详解这天的训练动作 ↗
+            </button>
+          </div>
+        </section>
+      </transition>
+
+      <!-- MACRO TAB -->
+      <transition name="fade" mode="out-in">
+        <section v-show="activeTab === 'macro'" class="section">
+          <div class="panel">
+            <div class="phead">
+              <div class="p-left">
+                <div class="ptitle">宏量规则总览</div>
+                <div class="chip">蛋白质每天固定 <strong>185g</strong></div>
+              </div>
+              <div class="wtype">高、中、低三档碳循环</div>
+            </div>
+
+            <div class="mgrid">
+              <div class="mc" v-for="stat in macroStats" :key="stat.label">
+                <div class="ml">{{ stat.label }}</div>
+                <div class="mv">{{ stat.value }}<span class="mu"> {{ stat.unit }}</span></div>
+              </div>
+            </div>
+
+            <div class="macro-grid">
+              <div class="macro-card" v-for="rule in macroRules" :key="rule.name">
+                <div class="head"><strong>{{ rule.name }}</strong><span>{{ rule.sub }}</span></div>
+                <div class="bar-track"><div class="bar-fill" :data-w="rule.progress" style="width:0%"></div></div>
+                <p>{{ rule.text }}</p>
+              </div>
+            </div>
+
+            <div class="callout">{{ macroCallout }}</div>
+            <button class="askbtn" @click="sendPrompt('我某天蛋白质没吃够怎么快速补救？')">蛋白质没吃够怎么补救 ↗</button>
+          </div>
+        </section>
+      </transition>
+
+      <!-- FOOD TAB -->
+      <transition name="fade" mode="out-in">
+        <section v-show="activeTab === 'food'" class="section">
+          <div class="panel">
+            <div class="phead">
+              <div class="p-left">
+                <div class="ptitle">食材速查</div>
+                <div class="chip">方便备餐 · 无乳糖 · 高执行性</div>
+              </div>
+              <div class="wtype">食材分层展示</div>
+            </div>
+
+            <div class="food-grid">
+              <div class="food-section" v-for="section in foodSections" :key="section.title">
+                <h3>{{ section.title }}</h3>
+                <div class="sub">{{ section.sub }}</div>
+                <div class="food-item" v-for="item in section.items" :key="item.name">
+                  <strong>{{ item.name }}</strong>
+                  <span>{{ item.desc }}</span>
+                </div>
+              </div>
+            </div>
+
+            <button class="askbtn" @click="sendPrompt('帮我设计一个周末可以批量备餐的方案')">帮我设计批量备餐方案 ↗</button>
+          </div>
+        </section>
+      </transition>
+
+      <!-- NOTES TAB -->
+      <transition name="fade" mode="out-in">
+        <section v-show="activeTab === 'notes'" class="section">
+          <div class="panel">
+            <div class="phead">
+              <div class="p-left">
+                <div class="ptitle">执行要点</div>
+                <div class="chip">落地细节 · 调整信号 · 周期复盘</div>
+              </div>
+              <div class="wtype">行动优先级</div>
+            </div>
+
+            <div class="notes-grid">
+              <div class="note-card" v-for="section in noteSections" :key="section.title">
+                <h3>{{ section.title }}</h3>
+                <div class="item" v-for="item in section.items" :key="item.key">
+                  <div class="key">{{ item.key }}</div>
+                  <div class="val">{{ item.val }}</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="callout">周末把鸡胸肉一次煮 500-600g、红薯蒸好冷藏，工作日训后直接加热就能吃，这是这个方案真正能长期坚持下去的关键。</div>
+            <button class="askbtn" @click="sendPrompt('执行4周了，帮我分析一下是否需要调整方案')">4周后帮我做方案评估 ↗</button>
+          </div>
+        </section>
+      </transition>
+
+      <div class="footer-space"></div>
+
+    </main>
+  </div>
+
+  
+  <script>
+  const { createApp, ref, computed, nextTick, onMounted } = Vue;
+
+  createApp({
+    setup() {
+      const tabs = [
+        {
+                "id": "plan",
+                "label": "周计划"
+        },
+        {
+                "id": "macro",
+                "label": "宏量规则"
+        },
+        {
+                "id": "food",
+                "label": "食材速查"
+        },
+        {
+                "id": "notes",
+                "label": "执行要点"
+        }
+];
+
+      const macroStats = [
+        {
+                "label": "高碳日热量",
+                "value": 2500,
+                "unit": "kcal"
+        },
+        {
+                "label": "中碳日热量",
+                "value": 2100,
+                "unit": "kcal"
+        },
+        {
+                "label": "低碳日热量",
+                "value": 1800,
+                "unit": "kcal"
+        },
+        {
+                "label": "蛋白质（每天固定）",
+                "value": 185,
+                "unit": "g"
+        }
+];
+      const macroRules = [
+        {
+                "name": "高碳日",
+                "sub": "碳水 310-340g / 脂肪 50g",
+                "progress": 100,
+                "text": "配大肌群训练（腿、背）。午餐必须吃足，糙米饭200g+。训后30min内补红薯150g+鸡胸150g。高碳不等于放开吃，脂肪要压住。"
+        },
+        {
+                "name": "中碳日",
+                "sub": "碳水 190-220g / 脂肪 62g",
+                "progress": 63,
+                "text": "配次要肌群（肩、腹）。午餐糙米饭120g，训后红薯100g。脂肪来源可以稍微宽松，橄榄油、鸡蛋正常吃。"
+        },
+        {
+                "name": "低碳日",
+                "sub": "碳水 80-100g / 脂肪 70g",
+                "progress": 30,
+                "text": "配胸、三头或休息日。脂肪从好来源补：牛油果、鸡蛋、橄榄油、三文鱼。训练日训后仍补50g红薯，休息日不补。"
+        },
+        {
+                "name": "蛋白质",
+                "sub": "所有碳日固定 185g，分 5-6 餐",
+                "progress": 86,
+                "text": "不喝蛋白粉，每餐必须有蛋白质来源。参考：鸡胸250g、三文鱼150g、鸡蛋5个、豆腐/豆干100g、虾100g，基本可以接近 185g。"
+        }
+];
+      const macroCallout = "高碳日优先保证午餐和训后补给，中碳日强调训练质量与脂肪平衡，低碳日则把恢复、控脂和蛋白质摄入放在最前面。";
+
+      const foodSections = [
+        {
+                "title": "蛋白质来源（无乳糖）",
+                "sub": "主力补给与便携高蛋白选择",
+                "items": [
+                        {
+                                "name": "鸡胸肉",
+                                "desc": "31g蛋白 / 100g。主力来源，每天250-300g，水煮/气炸/煎均可，批量煮好冷藏3天。"
+                        },
+                        {
+                                "name": "鸡蛋",
+                                "desc": "6g蛋白 / 个。每天4-5个，高碳日可全蛋，低碳日2全蛋+2蛋白，乳糖不耐受可放心吃。"
+                        },
+                        {
+                                "name": "三文鱼",
+                                "desc": "20g蛋白 / 100g + Omega-3。抗炎降脂，每周3次，煎/烤/生食均可，晚餐首选。"
+                        },
+                        {
+                                "name": "金枪鱼罐头",
+                                "desc": "25g蛋白 / 100g。水浸版，低脂高蛋白，工作日加餐救急神器，开罐即食。"
+                        },
+                        {
+                                "name": "虾",
+                                "desc": "18g蛋白 / 100g。低脂，低碳日最适合，白灼最方便。"
+                        },
+                        {
+                                "name": "瘦牛肉",
+                                "desc": "26g蛋白 / 100g。里脊/腱子，富含铁锌，每周1-2次，高碳日优先。"
+                        },
+                        {
+                                "name": "北豆腐/豆干",
+                                "desc": "12-15g蛋白 / 100g。植物蛋白补充，睡前餐或加餐，消化慢利于夜间合成。"
+                        }
+                ]
+        },
+        {
+                "title": "碳水来源（净碳慢消化）",
+                "sub": "主食、训前、训后补给分工明确",
+                "items": [
+                        {
+                                "name": "糙米",
+                                "desc": "GI 55，主食首选，高碳日每餐熟重150-200g。"
+                        },
+                        {
+                                "name": "燕麦",
+                                "desc": "早餐主力，饱腹感强，干重60-80g，所有碳日均可用。"
+                        },
+                        {
+                                "name": "红薯",
+                                "desc": "训后首选，GI 58，富含钾，高碳日150g / 低碳日50g。"
+                        },
+                        {
+                                "name": "香蕉/椰枣",
+                                "desc": "训前快速补糖原，工作日出发前路上吃，不算正餐。"
+                        },
+                        {
+                                "name": "藜麦",
+                                "desc": "含蛋白质，中碳日代替糙米，口感多样。"
+                        }
+                ]
+        },
+        {
+                "title": "好脂肪来源（低碳日重点）",
+                "sub": "用来稳定激素与饱腹感",
+                "items": [
+                        {
+                                "name": "牛油果",
+                                "desc": "低碳日半个，单不饱和脂肪，配鸡蛋早餐最佳。"
+                        },
+                        {
+                                "name": "橄榄油",
+                                "desc": "每天10-15ml，炒菜或拌沙拉，抗炎。"
+                        },
+                        {
+                                "name": "坚果",
+                                "desc": "工作日下午少量（10-15粒核桃/杏仁），不方便吃饭时应急用。"
+                        }
+                ]
+        }
+];
+      const noteSections = [
+        {
+                "title": "工作日执行要点",
+                "items": [
+                        {
+                                "key": "午餐",
+                                "val": "训前最重要的一餐，不能省。高碳日午餐糙米200g，这是晚上6点训练的主要能量来源，距离训练6小时，吃饱没问题。"
+                        },
+                        {
+                                "key": "17:30",
+                                "val": "出发前小补（不算加餐）。香蕉1根或椰枣3-4颗，路上吃，15分钟内消化，给训练快速补一点糖原。低碳日可吃少量坚果代替。"
+                        },
+                        {
+                                "key": "训后",
+                                "val": "30分钟内必须吃。训练结束20:00-20:30，回家或路上准备好，这餐不能拖到21点后。可以提前备好鸡胸肉和红薯，微波炉加热2分钟搞定。"
+                        },
+                        {
+                                "key": "睡前",
+                                "val": "21:30-22:00，慢蛋白补充。鸡蛋2个+豆干/豆腐，慢消化蛋白，支撑夜间肌肉合成。不要吃碳水。"
+                        }
+                ]
+        },
+        {
+                "title": "进度调整信号",
+                "items": [
+                        {
+                                "key": "体重停滞",
+                                "val": "连续2周无变化 → 先加有氧5-10分钟，再考虑低碳日减碳水20-30g，两个不同时动。"
+                        },
+                        {
+                                "key": "掉重太快",
+                                "val": "每周超1kg → 高碳日加碳水50g，防掉肌，体重数字不是唯一指标。"
+                        },
+                        {
+                                "key": "力量下降",
+                                "val": "训练重量明显掉 → 高碳日加量，不是你变弱，是碳水不够。"
+                        },
+                        {
+                                "key": "4周评估",
+                                "val": "同时间同光线拍腹肌对比照，视觉进步比体重更准确。体重没动但视觉改善 = 增肌同时减脂，是最理想的状态。"
+                        }
+                ]
+        }
+];
+      const days = [
+        {
+                "label": "周一",
+                "name": "腿 + 臀",
+                "carb": "high",
+                "type": "工作日晚练",
+                "cal": 2500,
+                "pro": 185,
+                "carb_g": 330,
+                "fat": 50,
+                "meals": [
+                        {
+                                "time": "07:30",
+                                "name": "早餐",
+                                "items": "燕麦80g（干重）+ 鸡蛋3个（全蛋）+ 香蕉1根"
+                        },
+                        {
+                                "time": "12:00",
+                                "name": "午餐（训前主餐）",
+                                "items": "糙米饭200g熟重 + 瘦牛肉/鸡胸150g + 西兰花+蔬菜200g + 少量橄榄油"
+                        },
+                        {
+                                "time": "17:30",
+                                "name": "训前小补（路上）",
+                                "items": "香蕉1根 或 椰枣3-4颗"
+                        },
+                        {
+                                "time": "18:00",
+                                "name": "训练",
+                                "items": "腿 + 臀"
+                        },
+                        {
+                                "time": "20:30",
+                                "name": "训后30min内（关键）",
+                                "items": "红薯150g + 鸡胸肉150g（提前备好，微波加热2min）"
+                        },
+                        {
+                                "time": "21:30",
+                                "name": "睡前餐",
+                                "items": "鸡蛋2个 + 豆干80g"
+                        }
+                ],
+                "exercises": [
+                        {
+                                "name": "杠铃深蹲",
+                                "sets": "5组 × 5rep（主升组）"
+                        },
+                        {
+                                "name": "腿举",
+                                "sets": "4组 × 10rep"
+                        },
+                        {
+                                "name": "罗马尼亚硬拉",
+                                "sets": "4组 × 8rep"
+                        },
+                        {
+                                "name": "保加利亚分腿蹲",
+                                "sets": "3组 × 10rep 每侧"
+                        },
+                        {
+                                "name": "腿弯举",
+                                "sets": "3组 × 12rep"
+                        },
+                        {
+                                "name": "臀推",
+                                "sets": "4组 × 10rep"
+                        }
+                ],
+                "tip": "午餐和训后餐最关键。午餐糙米200g是今天训练的燃料，训后30分钟窗口期必须吃红薯+鸡胸，这是腿日增肌的关键节点。提前备好，不要到训练完再想吃什么。"
+        },
+        {
+                "label": "周二",
+                "name": "背 + 二头",
+                "carb": "high",
+                "type": "工作日晚练",
+                "cal": 2500,
+                "pro": 185,
+                "carb_g": 310,
+                "fat": 52,
+                "meals": [
+                        {
+                                "time": "07:30",
+                                "name": "早餐",
+                                "items": "燕麦80g + 鸡蛋3个 + 香蕉1根"
+                        },
+                        {
+                                "time": "12:00",
+                                "name": "午餐（训前主餐）",
+                                "items": "糙米饭180g + 鸡胸肉150g + 西兰花+菠菜200g"
+                        },
+                        {
+                                "time": "17:30",
+                                "name": "训前小补",
+                                "items": "香蕉1根"
+                        },
+                        {
+                                "time": "18:00",
+                                "name": "训练",
+                                "items": "背 + 二头"
+                        },
+                        {
+                                "time": "20:30",
+                                "name": "训后30min内",
+                                "items": "红薯130g + 鸡胸肉150g"
+                        },
+                        {
+                                "time": "21:30",
+                                "name": "睡前餐",
+                                "items": "鸡蛋2个 + 豆干80g"
+                        }
+                ],
+                "exercises": [
+                        {
+                                "name": "引体向上",
+                                "sets": "4组 × 6-8rep（加重或辅助）"
+                        },
+                        {
+                                "name": "杠铃划船",
+                                "sets": "4组 × 8rep"
+                        },
+                        {
+                                "name": "坐姿拉力器下拉",
+                                "sets": "3组 × 10rep"
+                        },
+                        {
+                                "name": "单臂哑铃划船",
+                                "sets": "3组 × 10rep 每侧"
+                        },
+                        {
+                                "name": "杠铃弯举",
+                                "sets": "3组 × 10rep"
+                        },
+                        {
+                                "name": "锤式弯举",
+                                "sets": "3组 × 12rep"
+                        }
+                ],
+                "tip": "背日训练量大，碳水同样维持高位。引体向上是背部最好的复合动作，做不了的用辅助架，能做的考虑负重。二头放在最后，背用完力就够了。"
+        },
+        {
+                "label": "周三",
+                "name": "肩 + 腹",
+                "carb": "mid",
+                "type": "工作日晚练",
+                "cal": 2100,
+                "pro": 185,
+                "carb_g": 200,
+                "fat": 62,
+                "meals": [
+                        {
+                                "time": "07:30",
+                                "name": "早餐",
+                                "items": "燕麦60g + 鸡蛋3个 + 鸡胸肉100g"
+                        },
+                        {
+                                "time": "12:00",
+                                "name": "午餐",
+                                "items": "糙米饭120g + 鸡胸肉150g + 蔬菜200g + 橄榄油"
+                        },
+                        {
+                                "time": "17:30",
+                                "name": "训前小补",
+                                "items": "椰枣2-3颗 或 小香蕉1根"
+                        },
+                        {
+                                "time": "18:00",
+                                "name": "训练",
+                                "items": "肩 + 腹"
+                        },
+                        {
+                                "time": "20:30",
+                                "name": "训后",
+                                "items": "红薯100g + 鸡胸150g"
+                        },
+                        {
+                                "time": "21:30",
+                                "name": "睡前餐",
+                                "items": "鸡蛋2个 + 豆干80g"
+                        }
+                ],
+                "exercises": [
+                        {
+                                "name": "哑铃肩推",
+                                "sets": "4组 × 10rep"
+                        },
+                        {
+                                "name": "哑铃侧平举",
+                                "sets": "4组 × 12rep"
+                        },
+                        {
+                                "name": "俯身飞鸟（后束）",
+                                "sets": "3组 × 15rep"
+                        },
+                        {
+                                "name": "卷腹",
+                                "sets": "3组 × 20rep"
+                        },
+                        {
+                                "name": "悬挂举腿",
+                                "sets": "3组 × 12rep"
+                        },
+                        {
+                                "name": "平板支撑",
+                                "sets": "3组 × 45-60秒"
+                        }
+                ],
+                "tip": "中碳日，碳水减到200g。肩膀是小肌群，不需要像腿日那么多糖原。腹肌训练放在这天，低碳水有助于腹部线条显现。训练强度中等，保持质量优先。"
+        },
+        {
+                "label": "周四",
+                "name": "胸 + 三头",
+                "carb": "low",
+                "type": "工作日晚练",
+                "cal": 1800,
+                "pro": 185,
+                "carb_g": 90,
+                "fat": 70,
+                "meals": [
+                        {
+                                "time": "07:30",
+                                "name": "早餐",
+                                "items": "鸡蛋3个（2全蛋+1蛋白）+ 燕麦40g + 牛油果半个"
+                        },
+                        {
+                                "time": "12:00",
+                                "name": "午餐",
+                                "items": "鸡胸肉200g + 西兰花+蔬菜大量 + 糙米饭70g + 橄榄油"
+                        },
+                        {
+                                "time": "17:30",
+                                "name": "训前小补",
+                                "items": "少量坚果（10粒核桃/杏仁）"
+                        },
+                        {
+                                "time": "18:00",
+                                "name": "训练",
+                                "items": "胸 + 三头"
+                        },
+                        {
+                                "time": "20:30",
+                                "name": "训后",
+                                "items": "红薯50g + 鸡胸肉150g"
+                        },
+                        {
+                                "time": "21:30",
+                                "name": "睡前餐",
+                                "items": "鸡蛋2个 + 北豆腐100g"
+                        }
+                ],
+                "exercises": [
+                        {
+                                "name": "杠铃卧推",
+                                "sets": "5组 × 5rep（主升组）"
+                        },
+                        {
+                                "name": "上斜哑铃卧推",
+                                "sets": "4组 × 10rep"
+                        },
+                        {
+                                "name": "绳索夹胸",
+                                "sets": "3组 × 12rep"
+                        },
+                        {
+                                "name": "下斜俯卧撑",
+                                "sets": "3组 × 15rep"
+                        },
+                        {
+                                "name": "窄距卧推",
+                                "sets": "3组 × 10rep"
+                        },
+                        {
+                                "name": "绳索下压（三头）",
+                                "sets": "4组 × 12rep"
+                        }
+                ],
+                "tip": "低碳日，碳水压到90g。胸是相对次要的肌群，对糖原依赖比腿和背少。脂肪来源从牛油果、鸡蛋、橄榄油来，不缺能量。训后少量红薯50g意思一下，主要靠蛋白质恢复。"
+        },
+        {
+                "label": "周五",
+                "name": "休息 + 恢复",
+                "carb": "low",
+                "type": "休息日",
+                "cal": 1800,
+                "pro": 185,
+                "carb_g": 80,
+                "fat": 72,
+                "meals": [
+                        {
+                                "time": "08:00",
+                                "name": "早餐",
+                                "items": "鸡蛋3个 + 牛油果半个 + 燕麦30g"
+                        },
+                        {
+                                "time": "12:00",
+                                "name": "午餐",
+                                "items": "三文鱼150g + 西兰花+菠菜200g + 糙米饭60g + 橄榄油"
+                        },
+                        {
+                                "time": "15:00",
+                                "name": "下午（可选）",
+                                "items": "若有时间做30-40分钟LISS有氧；工作繁忙可跳过"
+                        },
+                        {
+                                "time": "19:00",
+                                "name": "晚餐",
+                                "items": "三文鱼130g / 虾200g + 西兰花+菠菜200g + 橄榄油10ml"
+                        },
+                        {
+                                "time": "21:30",
+                                "name": "睡前餐",
+                                "items": "豆干80g + 鸡蛋1个"
+                        }
+                ],
+                "exercises": [
+                        {
+                                "name": "LISS有氧（可选）",
+                                "sets": "快走/骑车/椭圆机，30-40分钟，心率120-135bpm"
+                        },
+                        {
+                                "name": "泡沫轴放松",
+                                "sets": "腿部、背部各5分钟"
+                        },
+                        {
+                                "name": "全身静态拉伸",
+                                "sets": "15-20分钟，重点拉腿和背"
+                        }
+                ],
+                "tip": "纯恢复日，不做力量训练。这天糖原清空是为了周末高碳腿日做准备。LISS有氧可做可不做，视当天疲劳程度决定。"
+        },
+        {
+                "label": "周六",
+                "name": "腿 + 臀（延续）",
+                "carb": "high",
+                "type": "周末下午练",
+                "cal": 2500,
+                "pro": 185,
+                "carb_g": 330,
+                "fat": 50,
+                "meals": [
+                        {
+                                "time": "08:00",
+                                "name": "早餐",
+                                "items": "燕麦80g + 鸡蛋3个 + 香蕉1根"
+                        },
+                        {
+                                "time": "11:00",
+                                "name": "加餐",
+                                "items": "糙米饭100g + 鸡胸肉120g（周末有时间，可以正式加餐）"
+                        },
+                        {
+                                "time": "13:30",
+                                "name": "午餐（训前2小时）",
+                                "items": "糙米饭150g + 瘦牛肉150g + 蔬菜200g"
+                        },
+                        {
+                                "time": "15:30",
+                                "name": "训练",
+                                "items": "腿臀 / 或补练本周落下的肌群"
+                        },
+                        {
+                                "time": "17:00",
+                                "name": "训后30min内",
+                                "items": "红薯200g + 鸡胸肉150g"
+                        },
+                        {
+                                "time": "19:30",
+                                "name": "晚餐",
+                                "items": "糙米饭100g + 三文鱼150g + 绿叶蔬菜"
+                        },
+                        {
+                                "time": "21:30",
+                                "name": "睡前餐",
+                                "items": "鸡蛋2个 + 豆干80g"
+                        }
+                ],
+                "exercises": [
+                        {
+                                "name": "杠铃深蹲",
+                                "sets": "5组 × 5rep"
+                        },
+                        {
+                                "name": "腿举",
+                                "sets": "4组 × 10rep"
+                        },
+                        {
+                                "name": "罗马尼亚硬拉",
+                                "sets": "4组 × 8rep"
+                        },
+                        {
+                                "name": "保加利亚分腿蹲",
+                                "sets": "3组 × 10rep 每侧"
+                        },
+                        {
+                                "name": "腿弯举",
+                                "sets": "3组 × 12rep"
+                        },
+                        {
+                                "name": "臀推",
+                                "sets": "4组 × 10rep"
+                        }
+                ],
+                "tip": "周末下午练最舒服，有时间做正式加餐，训练前2小时正餐，状态会比工作日晚练好很多。可以在这天尝试突破重量。"
+        },
+        {
+                "label": "周日",
+                "name": "完全休息",
+                "carb": "rest",
+                "type": "休息日",
+                "cal": 1700,
+                "pro": 185,
+                "carb_g": 70,
+                "fat": 70,
+                "meals": [
+                        {
+                                "time": "08:30",
+                                "name": "早餐",
+                                "items": "鸡蛋3个 + 牛油果半个 + 燕麦30g"
+                        },
+                        {
+                                "time": "12:00",
+                                "name": "午餐",
+                                "items": "三文鱼150g + 蔬菜大量 + 少量糙米60g"
+                        },
+                        {
+                                "time": "15:00",
+                                "name": "加餐（可选）",
+                                "items": "豆干80g + 黄瓜"
+                        },
+                        {
+                                "time": "19:00",
+                                "name": "晚餐",
+                                "items": "虾200g / 鸡胸肉150g + 西兰花+菠菜 + 橄榄油"
+                        },
+                        {
+                                "time": "21:30",
+                                "name": "睡前",
+                                "items": "鸡蛋2个"
+                        }
+                ],
+                "exercises": [
+                        {
+                                "name": "完全不训练",
+                                "sets": "身体和神经系统完整恢复"
+                        },
+                        {
+                                "name": "轻度散步（可选）",
+                                "sets": "30分钟，纯放松，不追心率"
+                        },
+                        {
+                                "name": "备餐",
+                                "sets": "周日备好周一二的鸡胸和红薯，工作日不手忙脚乱"
+                        }
+                ],
+                "tip": "这天热量最低，碳水也最少。重点是恢复。周日下午把下周的鸡胸肉批量煮好、红薯蒸好，放冰箱，工作日训后2分钟微波加热就能吃，这个习惯非常重要。"
+        }
+];
+
+    
+
+      const selIdx = ref(0);
+      const activeTab = ref('plan');
+      const tabsEl = ref(null);
+      const dpanelEl = ref(null);
+
+      const currentDay = computed(() => days[selIdx.value]);
+
+      const carbClass = c => ({ high:'bh', mid:'bm', low:'bl', rest:'bw' }[c] || 'bw');
+      const carbLabel = c => ({ high:'高碳日', mid:'中碳日', low:'低碳日', rest:'休整日' }[c] || '');
+      const dayFocus = c => c==='high' ? '训练前后补给优先' : c==='mid' ? '维持训练质量与平衡' : '恢复和控脂优先';
+      const tipShort = t => t && t.length > 20 ? t.slice(0, 20) + '…' : t;
+
+      function pick(i) {
+        selIdx.value = i;
+        nextTick(() => {
+          if (window.gsap) {
+            gsap.fromTo('.hero-num',
+              { scale: .88, opacity: .5 },
+              { scale: 1, opacity: 1, duration: .26, stagger: .04, ease: 'back.out(1.4)' }
+            );
+          }
+        });
+      }
+
+      function switchTab(t) {
+        activeTab.value = t;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (t === 'macro') {
+          nextTick(() => {
+            setTimeout(() => {
+              if (!window.gsap) return;
+              document.querySelectorAll('.bar-fill').forEach(bar => {
+                gsap.fromTo(bar,
+                  { width: '0%' },
+                  { width: bar.dataset.w + '%', duration: .8, ease: 'power2.out', delay: .1 }
+                );
+              });
+            }, 80);
+          });
+        }
+      }
+
+      function sendPrompt(text) {
+        if (typeof window.parent !== 'undefined' && window.parent !== window) {
+          try { window.parent.postMessage({ type: 'prompt', text }, '*'); } catch(e) {}
+        }
+      }
+      const getMuscleWikiLink = (name) => {
+        const map = {
+            "杠铃深蹲": "barbell-squat",
+            "腿举": "leg-press",
+            "罗马尼亚硬拉": "romanian-deadlift",
+            "保加利亚分腿蹲": "bulgarian-split-squat",
+            "腿弯举": "leg-curl",
+            "臀推": "hip-thrust",
+
+            "引体向上": "pull-up",
+            "杠铃划船": "barbell-row",
+            "坐姿拉力器下拉": "lat-pulldown",
+            "单臂哑铃划船": "dumbbell-row",
+            "杠铃弯举": "barbell-curl",
+            "锤式弯举": "hammer-curl",
+
+            "哑铃肩推": "dumbbell-shoulder-press",
+            "哑铃侧平举": "lateral-raise",
+            "俯身飞鸟（后束）": "rear-delt-fly",
+            "卷腹": "crunch",
+            "悬挂举腿": "hanging-leg-raise",
+            "平板支撑": "plank",
+
+            "杠铃卧推": "barbell-bench-press",
+            "上斜哑铃卧推": "incline-dumbbell-press",
+            "绳索夹胸": "cable-chest-fly",
+            "下斜俯卧撑": "decline-push-up",
+            "窄距卧推": "close-grip-bench-press",
+            "绳索下压（三头）": "tricep-pushdown"
+        }
+
+        const slug = map[name] || ""
+
+        return slug
+            ? `https://musclewiki.com/zh-cn/exercises/${slug}`
+            : "https://musclewiki.com/zh-cn/exercises/"
+      }
+      onMounted(() => {
+        let scrollTimer = null;
+        let ticking = false;
+
+        function onScroll() {
+          if (!ticking) {
+            requestAnimationFrame(() => {
+              if (tabsEl.value) tabsEl.value.classList.add('is-scrolling');
+              ticking = false;
+            });
+            ticking = true;
+          }
+          clearTimeout(scrollTimer);
+          scrollTimer = setTimeout(() => {
+            if (tabsEl.value) tabsEl.value.classList.remove('is-scrolling');
+          }, 150);
+        }
+
+        window.addEventListener('scroll', onScroll, { passive: true });
+
+        window.addEventListener('load', () => {
+          if (!window.gsap) return;
+          gsap.fromTo('.hero-copy',
+            { opacity: 0, y: 20 },
+            { opacity: 1, y: 0, duration: .55, ease: 'power2.out' }
+          );
+          gsap.fromTo('.hero-panel',
+            { opacity: 0, y: 20 },
+            { opacity: 1, y: 0, duration: .55, delay: .1, ease: 'power2.out' }
+          );
+          gsap.fromTo('.tabs',
+            { opacity: 0, y: 10 },
+            { opacity: 1, y: 0, duration: .4, delay: .22, ease: 'power2.out' }
+          );
+        });
+      });
+
+      return {
+        tabs, macroStats, macroRules, macroCallout, foodSections, noteSections, days,
+        selIdx, activeTab, tabsEl, dpanelEl, currentDay,
+        carbClass, carbLabel, dayFocus, tipShort, pick, switchTab, sendPrompt, getMuscleWikiLink
+      };
+    }
+  }).mount('#app');
+  </script>
+
+</body>
+</html>

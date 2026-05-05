@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>健身计划 · 高级UI版</title>
+  <style>
+    :root{
+      --bg0:#07111f;
+      --bg1:#0b1729;
+      --bg2:#111f36;
+      --card: rgba(13, 22, 39, .78);
+      --card2: rgba(255,255,255,.04);
+      --stroke: rgba(255,255,255,.10);
+      --stroke2: rgba(255,255,255,.06);
+      --text:#eaf1ff;
+      --muted: rgba(234,241,255,.68);
+      --muted2: rgba(234,241,255,.5);
+      --gold:#f3c66d;
+      --gold2:#f7dd9f;
+      --blue:#74b3ff;
+      --green:#7be3b0;
+      --red:#ff8d8d;
+      --shadow: 0 24px 70px rgba(0,0,0,.35);
+      --radius: 26px;
+      --radius-sm: 18px;
+      --radius-xs: 12px;
+      --blur: blur(18px);
+      --max: 1240px;
+      --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;height:100%}
+    body{
+      font-family: var(--font-sans);
+      color:var(--text);
+      background:
+        radial-gradient(circle at 12% 10%, rgba(116,179,255,.18), transparent 26%),
+        radial-gradient(circle at 88% 8%, rgba(243,198,109,.18), transparent 20%),
+        radial-gradient(circle at 72% 90%, rgba(123,227,176,.12), transparent 24%),
+        linear-gradient(180deg, var(--bg0), var(--bg1) 35%, #09101d 100%);
+      overflow-x:hidden;
+    }
+    .orb{
+      position:fixed; inset:auto;
+      border-radius:50%;
+      filter: blur(60px);
+      opacity:.6;
+      pointer-events:none;
+      z-index:0;
+    }
+    .orb.one{width:260px;height:260px;background:rgba(116,179,255,.18);left:-80px;top:40px}
+    .orb.two{width:320px;height:320px;background:rgba(243,198,109,.14);right:-120px;top:180px}
+    .orb.three{width:260px;height:260px;background:rgba(123,227,176,.12);left:40%;bottom:-120px}
+    .shell{
+      position:relative; z-index:1;
+      max-width:var(--max);
+      margin:0 auto;
+      padding:28px 18px 42px;
+    }
+    .hero{
+      display:grid;
+      grid-template-columns: 1.35fr .95fr;
+      gap:18px;
+      align-items:stretch;
+      margin-bottom:18px;
+    }
+    .hero-copy,.hero-panel,.tabs,.panel,.dc,.chip,.metric,.mini-card,.callout,.note-card,.section-head,.bar-track,.bar-fill{
+      backdrop-filter: var(--blur);
+      -webkit-backdrop-filter: var(--blur);
+    }
+    .hero-copy,.hero-panel,.tabs,.panel{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid var(--stroke);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+    }
+    .hero-copy{
+      padding:28px 28px 24px;
+      position:relative;
+      overflow:hidden;
+    }
+    .hero-copy:before{
+      content:"";
+      position:absolute; inset:-2px;
+      background:
+        radial-gradient(circle at 20% 10%, rgba(243,198,109,.18), transparent 24%),
+        radial-gradient(circle at 90% 20%, rgba(116,179,255,.18), transparent 22%);
+      pointer-events:none;
+    }
+    .eyebrow{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:7px 12px;
+      border-radius:999px;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.08);
+      color:var(--gold2);
+      font-size:12px;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      position:relative;
+      z-index:1;
+    }
+    .hero h1{
+      margin:14px 0 10px;
+      font-size: clamp(30px, 4vw, 54px);
+      line-height:1.06;
+      letter-spacing:-.03em;
+      position:relative;
+      z-index:1;
+    }
+    .hero p{
+      margin:0;
+      max-width:56ch;
+      color:var(--muted);
+      line-height:1.75;
+      font-size:14px;
+      position:relative;
+      z-index:1;
+    }
+    .hero-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:18px;
+      position:relative;
+      z-index:1;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:10px 14px;
+      border-radius:999px;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.08);
+      color:var(--text);
+      font-size:13px;
+      white-space:nowrap;
+    }
+    .pill:before{
+      content:"";
+      width:8px;height:8px;border-radius:999px;background:var(--gold);
+      box-shadow:0 0 0 6px rgba(243,198,109,.12);
+    }
+    .hero-panel{
+      padding:20px;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      justify-content:space-between;
+      min-height:100%;
+      position:relative;
+      overflow:hidden;
+    }
+    .hero-panel:after{
+      content:"";
+      position:absolute;
+      right:-40px; top:-40px;
+      width:170px; height:170px;
+      background: radial-gradient(circle, rgba(243,198,109,.2), transparent 60%);
+      pointer-events:none;
+    }
+    .hero-top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      position:relative;
+      z-index:1;
+    }
+    .hero-title{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+    }
+    .hero-title strong{
+      font-size:18px;
+      letter-spacing:-.02em;
+    }
+    .hero-title span{
+      color:var(--muted2);
+      font-size:12px;
+    }
+    .hero-badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 12px;
+      border-radius:999px;
+      font-size:12px;
+      border:1px solid rgba(255,255,255,.1);
+      background: rgba(255,255,255,.05);
+      color:var(--gold2);
+    }
+    .hero-badge i{
+      width:8px;height:8px;border-radius:50%;
+      background:currentColor;
+      display:inline-block;
+      box-shadow:0 0 0 6px rgba(243,198,109,.12);
+    }
+    .hero-metrics{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:10px;
+      position:relative;
+      z-index:1;
+    }
+    .mini-card{
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:20px;
+      padding:14px 14px 13px;
+      min-height:84px;
+    }
+    .mini-card .k{
+      color:var(--muted2);
+      font-size:12px;
+      margin-bottom:10px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .mini-card .k:before{
+      content:"";
+      width:8px;height:8px;border-radius:999px;background:var(--blue);
+      box-shadow:0 0 0 5px rgba(116,179,255,.10);
+    }
+    .mini-card .v{
+      font-size:26px;
+      font-weight:700;
+      letter-spacing:-.03em;
+      display:flex;
+      align-items:baseline;
+      gap:6px;
+    }
+    .mini-card .u{
+      font-size:12px;
+      color:var(--muted2);
+      font-weight:500;
+    }
+    .hero-foot{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      position:relative;
+      z-index:1;
+    }
+    .hero-chip{
+      flex:1 1 140px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:12px 14px;
+      border-radius:18px;
+      background: rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.08);
+      color:var(--muted);
+      font-size:12px;
+    }
+    .hero-chip strong{color:var(--text); font-size:13px}
+    .tabs{
+      display:flex;
+      gap:10px;
+      padding:10px;
+      margin-bottom:18px;
+      flex-wrap:wrap;
+      position:sticky;
+      top:12px;
+      z-index:12;
+      justify-content:space-between;
+    }
+    .tab{
+      flex:1 1 140px;
+      padding:13px 16px;
+      border-radius:18px;
+      border:1px solid transparent;
+      background: rgba(255,255,255,.03);
+      color:var(--muted);
+      font-size:14px;
+      cursor:pointer;
+      transition: .25s ease;
+      text-align:center;
+    }
+    .tab:hover{
+      transform:translateY(-1px);
+      border-color: rgba(255,255,255,.10);
+      background: rgba(255,255,255,.06);
+      color:var(--text);
+    }
+    .tab.on{
+      background: linear-gradient(180deg, rgba(243,198,109,.20), rgba(243,198,109,.09));
+      border-color: rgba(243,198,109,.28);
+      color:var(--text);
+      box-shadow: 0 10px 30px rgba(243,198,109,.08);
+    }
+    .tab.on:before{
+      content:"";
+      display:inline-block;
+      width:8px;height:8px;border-radius:50%;
+      background:var(--gold);
+      margin-right:10px;
+      vertical-align:middle;
+      box-shadow:0 0 0 5px rgba(243,198,109,.1);
+    }
+    .section{
+      display:none;
+      animation: fade .24s ease;
+    }
+    .section.active{display:block}
+    @keyframes fade{
+      from{opacity:.45; transform:translateY(8px)}
+      to{opacity:1; transform:translateY(0)}
+    }
+    .week{
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0,1fr));
+      gap:12px;
+      margin-bottom:16px;
+    }
+    .dc{
+      border-radius:24px;
+      border:1px solid var(--stroke2);
+      padding:16px 16px 14px;
+      cursor:pointer;
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      transition: .25s ease;
+      min-height:120px;
+      position:relative;
+      overflow:hidden;
+    }
+    .dc:before{
+      content:"";
+      position:absolute;
+      inset:auto -18px -36px auto;
+      width:120px;height:120px;border-radius:50%;
+      background: radial-gradient(circle, rgba(255,255,255,.07), transparent 65%);
+      transform: translateY(10px);
+      pointer-events:none;
+    }
+    .dc:hover{
+      transform: translateY(-2px);
+      border-color: rgba(255,255,255,.14);
+      box-shadow: 0 16px 30px rgba(0,0,0,.18);
+    }
+    .dc.sel{
+      border-color: rgba(116,179,255,.42);
+      background: linear-gradient(180deg, rgba(116,179,255,.16), rgba(255,255,255,.03));
+      box-shadow: 0 18px 35px rgba(116,179,255,.12);
+    }
+    .dlabel{
+      font-size:12px;
+      color:var(--muted2);
+      margin-bottom:10px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .dlabel:before{
+      content:"";
+      width:8px;height:8px;border-radius:999px;
+      background: rgba(255,255,255,.24);
+    }
+    .dname{
+      font-size:16px;
+      font-weight:700;
+      color:var(--text);
+      margin-bottom:12px;
+      line-height:1.35;
+      letter-spacing:-.02em;
+      min-height:44px;
+    }
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      font-size:12px;
+      padding:6px 10px;
+      border-radius:999px;
+      font-weight:700;
+      letter-spacing:.02em;
+    }
+    .bh{background: linear-gradient(180deg, #ffd67d, #efbb4e); color:#4a3204}
+    .bm{background: linear-gradient(180deg, #bfe0ff, #7eb6f2); color:#0e3460}
+    .bl{background: linear-gradient(180deg, #cef0a2, #9bd56f); color:#234809}
+    .bw{background: linear-gradient(180deg, #ddd9cf, #b9b3a6); color:#4a4741}
+    .tagline{
+      margin:0 0 16px;
+      color:var(--muted2);
+      font-size:13px;
+      line-height:1.7;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .tagline:before{
+      content:"";
+      width:9px;height:9px;border-radius:999px;background:var(--gold);
+      box-shadow:0 0 0 5px rgba(243,198,109,.12);
+      flex:0 0 auto;
+    }
+    .panel{
+      padding:18px;
+      border-radius:30px;
+    }
+    .phead{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:16px;
+    }
+    .p-left{display:flex; align-items:center; gap:12px; flex-wrap:wrap}
+    .ptitle{
+      font-size:22px;
+      font-weight:800;
+      letter-spacing:-.03em;
+    }
+    .wtype{
+      font-size:12px;
+      color:var(--muted);
+      padding:7px 12px;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:999px;
+      background: rgba(255,255,255,.04);
+    }
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:7px 12px;
+      border-radius:999px;
+      background: rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.08);
+      color:var(--muted);
+      font-size:12px;
+    }
+    .chip strong{color:var(--text)}
+    .mgrid{
+      display:grid;
+      grid-template-columns: repeat(4,minmax(0,1fr));
+      gap:12px;
+      margin-bottom:18px;
+    }
+    .mc{
+      position:relative;
+      overflow:hidden;
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:22px;
+      padding:16px 16px 14px;
+      min-height:92px;
+    }
+    .mc:before{
+      content:"";
+      position:absolute;
+      inset:auto -28px -28px auto;
+      width:110px;height:110px;border-radius:50%;
+      background: radial-gradient(circle, rgba(255,255,255,.10), transparent 70%);
+      pointer-events:none;
+    }
+    .ml{
+      font-size:12px;
+      color:var(--muted2);
+      margin-bottom:14px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .ml:before{
+      content:"";
+      width:8px;height:8px;border-radius:999px;background:var(--blue);
+      box-shadow:0 0 0 5px rgba(116,179,255,.10);
+    }
+    .mv{
+      font-size:28px;
+      font-weight:800;
+      letter-spacing:-.04em;
+      display:flex;
+      align-items:baseline;
+      gap:6px;
+      line-height:1;
+    }
+    .mu{
+      font-size:12px;
+      color:var(--muted2);
+      font-weight:600;
+    }
+    .split{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:16px;
+      align-items:start;
+    }
+    .block{
+      background: rgba(255,255,255,.03);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:24px;
+      padding:14px;
+    }
+    .section-title{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin:18px 0 12px;
+      padding-top:2px;
+    }
+    .section-title .name{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-size:15px;
+      font-weight:800;
+      letter-spacing:-.02em;
+    }
+    .section-title .name:before{
+      content:"";
+      width:10px;height:10px;border-radius:999px;
+      background:var(--gold);
+      box-shadow:0 0 0 6px rgba(243,198,109,.10);
+    }
+    .section-title .desc{
+      font-size:12px;
+      color:var(--muted2);
+      white-space:nowrap;
+    }
+    .mlist{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .mrow{
+      display:flex;
+      gap:12px;
+      align-items:flex-start;
+      padding:14px 14px;
+      border:1px solid rgba(255,255,255,.07);
+      background: rgba(255,255,255,.04);
+      border-radius:20px;
+    }
+    .mrow:hover{
+      border-color: rgba(255,255,255,.12);
+      background: rgba(255,255,255,.055);
+    }
+    .mtime{
+      font-size:12px;
+      color:var(--gold2);
+      min-width:76px;
+      flex:0 0 auto;
+      padding-top:2px;
+      line-height:1.5;
+      font-weight:700;
+    }
+    .mcontent{flex:1; min-width:0}
+    .mname{
+      font-size:14px;
+      font-weight:800;
+      color:var(--text);
+      margin-bottom:4px;
+      letter-spacing:-.01em;
+    }
+    .mitems{
+      font-size:13px;
+      color:var(--muted);
+      line-height:1.75;
+      word-break:break-word;
+    }
+    .elist{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap:10px;
+    }
+    .erow{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:14px;
+      padding:12px 14px;
+      background: rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.07);
+      border-radius:18px;
+      font-size:13px;
+      line-height:1.5;
+    }
+    .en{
+      color:var(--text);
+      font-weight:700;
+    }
+    .es{
+      color:var(--muted);
+      text-align:right;
+      max-width:52%;
+    }
+    .tip{
+      margin-top:14px;
+      padding:15px 16px;
+      background: linear-gradient(180deg, rgba(243,198,109,.12), rgba(255,255,255,.04));
+      border:1px solid rgba(243,198,109,.16);
+      border-radius:20px;
+      font-size:13px;
+      color:rgba(234,241,255,.84);
+      line-height:1.8;
+    }
+    .askbtn{
+      margin-top:16px;
+      padding:11px 16px;
+      font-size:13px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      color:var(--text);
+      cursor:pointer;
+      transition:.2s ease;
+    }
+    .askbtn:hover{
+      transform: translateY(-1px);
+      background: rgba(255,255,255,.07);
+      border-color: rgba(255,255,255,.16);
+    }
+    .callout{
+      margin-top:14px;
+      padding:14px 16px;
+      border-radius:22px;
+      border:1px solid rgba(116,179,255,.18);
+      background: linear-gradient(180deg, rgba(116,179,255,.12), rgba(255,255,255,.04));
+      color:rgba(234,241,255,.86);
+      line-height:1.8;
+      font-size:13px;
+    }
+    .macro-grid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap:14px;
+      margin-top:6px;
+    }
+    .macro-card{
+      border-radius:24px;
+      border:1px solid rgba(255,255,255,.08);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      padding:16px;
+    }
+    .macro-card .head{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:flex-start;
+      margin-bottom:12px;
+    }
+    .macro-card .head strong{
+      font-size:15px;
+      letter-spacing:-.02em;
+    }
+    .macro-card .head span{
+      color:var(--muted2);
+      font-size:12px;
+      text-align:right;
+    }
+    .bar-track{
+      height:10px;
+      width:100%;
+      border-radius:999px;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.06);
+      overflow:hidden;
+      margin-bottom:10px;
+    }
+    .bar-fill{
+      height:100%;
+      border-radius:inherit;
+      background: linear-gradient(90deg, rgba(116,179,255,.95), rgba(243,198,109,.95));
+    }
+    .macro-card p{
+      margin:0;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.8;
+    }
+    .food-grid{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap:14px;
+    }
+    .food-section{
+      padding:16px;
+      border-radius:24px;
+      border:1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.03);
+    }
+    .food-section h3{
+      margin:0 0 12px;
+      font-size:16px;
+      letter-spacing:-.02em;
+    }
+    .food-section .sub{
+      margin-top:-4px;
+      margin-bottom:12px;
+      font-size:12px;
+      color:var(--muted2);
+    }
+    .food-item{
+      padding:12px 13px;
+      border-radius:18px;
+      background: rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.07);
+      margin-bottom:10px;
+    }
+    .food-item:last-child{margin-bottom:0}
+    .food-item strong{
+      display:block;
+      margin-bottom:4px;
+      font-size:13px;
+      color:var(--text);
+    }
+    .food-item span{
+      display:block;
+      color:var(--muted);
+      font-size:12.5px;
+      line-height:1.7;
+    }
+    .notes-grid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap:14px;
+    }
+    .note-card{
+      padding:16px;
+      border-radius:24px;
+      border:1px solid rgba(255,255,255,.08);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+    }
+    .note-card h3{
+      margin:0 0 10px;
+      font-size:16px;
+      letter-spacing:-.02em;
+    }
+    .note-card .item{
+      display:flex;
+      gap:10px;
+      padding:11px 0;
+      border-top:1px solid rgba(255,255,255,.06);
+    }
+    .note-card .item:first-of-type{border-top:none;padding-top:0}
+    .note-card .item .key{
+      width:78px;
+      flex:0 0 auto;
+      color:var(--gold2);
+      font-size:12px;
+      font-weight:700;
+    }
+    .note-card .item .val{
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.75;
+    }
+    .footer-space{height:12px}
+    @media (max-width: 1080px){
+      .hero{grid-template-columns:1fr}
+      .week{grid-template-columns: repeat(2, minmax(0,1fr))}
+      .mgrid{grid-template-columns: repeat(2, minmax(0,1fr))}
+      .food-grid,.notes-grid,.macro-grid,.split{grid-template-columns:1fr}
+      .elist{grid-template-columns:1fr}
+    }
+    @media (max-width: 640px){
+      .shell{padding:16px 12px 30px}
+      .hero-copy,.hero-panel,.panel{border-radius:22px}
+      .tabs{position:relative; top:auto}
+      .tab{flex:1 1 calc(50% - 10px)}
+      .week{grid-template-columns:1fr}
+      .mgrid{grid-template-columns:1fr}
+      .hero-metrics{grid-template-columns:1fr}
+      .hero-chip{flex-basis:100%}
+      .phead,.hero-top,.section-title{align-items:flex-start}
+      .hero-title strong{font-size:16px}
+    }
+  </style>
+</head>
+<body>
+  <div class="orb one"></div>
+  <div class="orb two"></div>
+  <div class="orb three"></div>
+
+  <main class="shell">
+    <section class="hero">
+      <div class="hero-copy">
+        <div class="eyebrow">CARB CYCLE · TRAINING SYSTEM</div>
+        <h1>碳循环完整方案 v2</h1>
+        <p>把你原本的训练、饮食、宏量规则保留下来，用更高级的视觉层级重新组织成一张更容易执行、也更像专业教练后台的总控台。</p>
+        <div class="hero-actions">
+          <div class="pill">工作日晚练 / 周末下午练</div>
+          <div class="pill">无蛋白粉</div>
+          <div class="pill">高、中、低碳日清晰分层</div>
+        </div>
+      </div>
+      <div class="hero-panel">
+        <div class="hero-top">
+          <div class="hero-title">
+            <strong id="hero-day">周一 · 腿 + 臀</strong>
+            <span id="hero-sub">工作日晚练 · 当前选中日</span>
+          </div>
+          <div class="hero-badge"><i></i><span id="hero-badge">高碳日</span></div>
+        </div>
+        <div class="hero-metrics">
+          <div class="mini-card">
+            <div class="k">热量</div>
+            <div class="v"><span id="hero-cal">2500</span><span class="u">kcal</span></div>
+          </div>
+          <div class="mini-card">
+            <div class="k">蛋白质</div>
+            <div class="v"><span id="hero-pro">185</span><span class="u">g</span></div>
+          </div>
+          <div class="mini-card">
+            <div class="k">碳水</div>
+            <div class="v"><span id="hero-carb">330</span><span class="u">g</span></div>
+          </div>
+          <div class="mini-card">
+            <div class="k">脂肪</div>
+            <div class="v"><span id="hero-fat">50</span><span class="u">g</span></div>
+          </div>
+        </div>
+        <div class="hero-foot">
+          <div class="hero-chip"><span>训练类型</span><strong id="hero-type">工作日晚练</strong></div>
+          <div class="hero-chip"><span>今日重点</span><strong id="hero-tip-short">午餐和训后餐最关键</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="tabs">
+      <button class="tab on" onclick="switchTab('plan')">周计划</button>
+      <button class="tab" onclick="switchTab('macro')">宏量规则</button>
+      <button class="tab" onclick="switchTab('food')">食材速查</button>
+      <button class="tab" onclick="switchTab('notes')">执行要点</button>
+    </div>
+
+    <section id="t-plan" class="section active">
+      <div class="tagline">点选任意一天查看完整训练与饮食结构，右侧面板会同步切换关键数据。</div>
+      <div class="week" id="wgrid"></div>
+      <div class="panel" id="dpanel"></div>
+    </section>
+
+    <section id="t-macro" class="section">
+      <div class="panel">
+        <div class="phead">
+          <div class="p-left">
+            <div class="ptitle">宏量规则总览</div>
+            <div class="chip">蛋白质每天固定 <strong>185g</strong></div>
+          </div>
+          <div class="wtype">高、中、低三档碳循环</div>
+        </div>
+
+        <div class="mgrid">
+          <div class="mc"><div class="ml">高碳日热量</div><div class="mv">2500<span class="mu"> kcal</span></div></div>
+          <div class="mc"><div class="ml">中碳日热量</div><div class="mv">2100<span class="mu"> kcal</span></div></div>
+          <div class="mc"><div class="ml">低碳日热量</div><div class="mv">1800<span class="mu"> kcal</span></div></div>
+          <div class="mc"><div class="ml">蛋白质（每天固定）</div><div class="mv">185<span class="mu"> g</span></div></div>
+        </div>
+
+        <div class="macro-grid">
+          <div class="macro-card">
+            <div class="head">
+              <strong>高碳日</strong>
+              <span>碳水 310-340g / 脂肪 50g</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill" style="width:100%"></div></div>
+            <p>配大肌群训练（腿、背）。午餐必须吃足，糙米饭200g+。训后30min内补红薯150g+鸡胸150g。高碳不等于放开吃，脂肪要压住。</p>
+          </div>
+          <div class="macro-card">
+            <div class="head">
+              <strong>中碳日</strong>
+              <span>碳水 190-220g / 脂肪 62g</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill" style="width:63%"></div></div>
+            <p>配次要肌群（肩、腹）。午餐糙米饭120g，训后红薯100g。脂肪来源可以稍微宽松，橄榄油、鸡蛋正常吃。</p>
+          </div>
+          <div class="macro-card">
+            <div class="head">
+              <strong>低碳日</strong>
+              <span>碳水 80-100g / 脂肪 70g</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill" style="width:30%"></div></div>
+            <p>配胸、三头或休息日。脂肪从好来源补：牛油果、鸡蛋、橄榄油、三文鱼。训练日训后仍补50g红薯，休息日不补。</p>
+          </div>
+          <div class="macro-card">
+            <div class="head">
+              <strong>蛋白质</strong>
+              <span>所有碳日固定 185g，分5-6餐</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill" style="width:86%"></div></div>
+            <p>不喝蛋白粉，每餐必须有蛋白质来源。参考：鸡胸250g(78g蛋白) + 三文鱼150g(30g) + 鸡蛋5个(30g) + 豆腐/豆干100g(12-15g) + 虾100g(18g) ≈ 183g。</p>
+          </div>
+        </div>
+
+        <div class="callout">高碳日优先保证午餐和训后补给，中碳日强调训练质量与脂肪平衡，低碳日则把恢复、控脂和蛋白质摄入放在最前面。</div>
+        <button class="askbtn" onclick="sendPrompt('我某天蛋白质没吃够怎么快速补救？')">蛋白质没吃够怎么补救 ↗</button>
+      </div>
+    </section>
+
+    <section id="t-food" class="section">
+      <div class="panel">
+        <div class="phead">
+          <div class="p-left">
+            <div class="ptitle">食材速查</div>
+            <div class="chip">方便备餐 · 无乳糖 · 高执行性</div>
+          </div>
+          <div class="wtype">食材分层展示</div>
+        </div>
+
+        <div class="food-grid">
+          <div class="food-section">
+            <h3>蛋白质来源（无乳糖）</h3>
+            <div class="sub">主力补给与便携高蛋白选择</div>
+            <div class="food-item"><strong>鸡胸肉</strong><span>31g蛋白 / 100g。主力来源，每天250-300g，水煮/气炸/煎均可，批量煮好冷藏3天。</span></div>
+            <div class="food-item"><strong>鸡蛋</strong><span>6g蛋白 / 个。每天4-5个，高碳日可全蛋，低碳日2全蛋+2蛋白，乳糖不耐受可放心吃。</span></div>
+            <div class="food-item"><strong>三文鱼</strong><span>20g蛋白 / 100g + Omega-3。抗炎降脂，每周3次，煎/烤/生食均可，晚餐首选。</span></div>
+            <div class="food-item"><strong>金枪鱼罐头</strong><span>25g蛋白 / 100g。水浸版，低脂高蛋白，工作日加餐救急神器，开罐即食。</span></div>
+            <div class="food-item"><strong>虾</strong><span>18g蛋白 / 100g。低脂，低碳日最适合，白灼最方便。</span></div>
+            <div class="food-item"><strong>瘦牛肉</strong><span>26g蛋白 / 100g。里脊/腱子，富含铁锌，每周1-2次，高碳日优先。</span></div>
+            <div class="food-item"><strong>北豆腐/豆干</strong><span>12-15g蛋白 / 100g。植物蛋白补充，睡前餐或加餐，消化慢利于夜间合成。</span></div>
+          </div>
+
+          <div class="food-section">
+            <h3>碳水来源（净碳慢消化）</h3>
+            <div class="sub">主食、训前、训后补给分工明确</div>
+            <div class="food-item"><strong>糙米</strong><span>GI 55，主食首选，高碳日每餐熟重150-200g。</span></div>
+            <div class="food-item"><strong>燕麦</strong><span>早餐主力，饱腹感强，干重60-80g，所有碳日均可用。</span></div>
+            <div class="food-item"><strong>红薯</strong><span>训后首选，GI 58，富含钾，高碳日150g / 低碳日50g。</span></div>
+            <div class="food-item"><strong>香蕉/椰枣</strong><span>训前快速补糖原，工作日出发前路上吃，不算正餐。</span></div>
+            <div class="food-item"><strong>藜麦</strong><span>含蛋白质，中碳日代替糙米，口感多样。</span></div>
+          </div>
+
+          <div class="food-section">
+            <h3>好脂肪来源（低碳日重点）</h3>
+            <div class="sub">用来稳定激素与饱腹感</div>
+            <div class="food-item"><strong>牛油果</strong><span>低碳日半个，单不饱和脂肪，配鸡蛋早餐最佳。</span></div>
+            <div class="food-item"><strong>橄榄油</strong><span>每天10-15ml，炒菜或拌沙拉，抗炎。</span></div>
+            <div class="food-item"><strong>坚果</strong><span>工作日下午少量（10-15粒核桃/杏仁），不方便吃饭时应急用。</span></div>
+          </div>
+        </div>
+
+        <button class="askbtn" onclick="sendPrompt('帮我设计一个周末可以批量备餐的方案')">帮我设计批量备餐方案 ↗</button>
+      </div>
+    </section>
+
+    <section id="t-notes" class="section">
+      <div class="panel">
+        <div class="phead">
+          <div class="p-left">
+            <div class="ptitle">执行要点</div>
+            <div class="chip">落地细节 · 调整信号 · 周期复盘</div>
+          </div>
+          <div class="wtype">行动优先级</div>
+        </div>
+
+        <div class="notes-grid">
+          <div class="note-card">
+            <h3>工作日执行要点</h3>
+            <div class="item"><div class="key">午餐</div><div class="val">训前最重要的一餐，不能省。高碳日午餐糙米200g，这是晚上6点训练的主要能量来源，距离训练6小时，吃饱没问题。</div></div>
+            <div class="item"><div class="key">17:30</div><div class="val">出发前小补（不算加餐）。香蕉1根或椰枣3-4颗，路上吃，15分钟内消化，给训练快速补一点糖原。低碳日可吃少量坚果代替。</div></div>
+            <div class="item"><div class="key">训后</div><div class="val">30分钟内必须吃。训练结束20:00-20:30，回家或路上准备好，这餐不能拖到21点后。可以提前备好鸡胸肉和红薯，微波炉加热2分钟搞定。</div></div>
+            <div class="item"><div class="key">睡前</div><div class="val">21:30-22:00，慢蛋白补充。鸡蛋2个+豆干/豆腐，慢消化蛋白，支撑夜间肌肉合成。不要吃碳水。</div></div>
+          </div>
+
+          <div class="note-card">
+            <h3>进度调整信号</h3>
+            <div class="item"><div class="key">体重停滞</div><div class="val">连续2周无变化 → 先加有氧5-10分钟，再考虑低碳日减碳水20-30g，两个不同时动。</div></div>
+            <div class="item"><div class="key">掉重太快</div><div class="val">每周超1kg → 高碳日加碳水50g，防掉肌，体重数字不是唯一指标。</div></div>
+            <div class="item"><div class="key">力量下降</div><div class="val">训练重量明显掉 → 高碳日加量，不是你变弱，是碳水不够。</div></div>
+            <div class="item"><div class="key">4周评估</div><div class="val">同时间同光线拍腹肌对比照，视觉进步比体重更准确。体重没动但视觉改善 = 增肌同时减脂，是最理想的状态。</div></div>
+          </div>
+        </div>
+
+        <div class="callout">周末把鸡胸肉一次煮 500-600g、红薯蒸好冷藏，工作日训后直接加热就能吃，这是这个方案真正能长期坚持下去的关键。</div>
+        <button class="askbtn" onclick="sendPrompt('执行4周了，帮我分析一下是否需要调整方案')">4周后帮我做方案评估 ↗</button>
+      </div>
+    </section>
+    <div class="footer-space"></div>
+  </main>
+
+  <script>
+    const days=[
+      {
+        label:"周一",name:"腿 + 臀",carb:"high",type:"工作日晚练",
+        cal:2500,pro:185,carb_g:330,fat:50,
+        meals:[
+          {time:"07:30",name:"早餐",items:"燕麦80g（干重）+ 鸡蛋3个（全蛋）+ 香蕉1根"},
+          {time:"12:00",name:"午餐（训前主餐）",items:"糙米饭200g熟重 + 瘦牛肉/鸡胸150g + 西兰花+蔬菜200g + 少量橄榄油"},
+          {time:"17:30",name:"出发前小补",items:"香蕉1根（路上吃，快速补糖原，不算正餐）"},
+          {time:"18:00",name:"训练",items:"腿 + 臀 大重量日"},
+          {time:"20:15",name:"训后30min内",items:"红薯150g（微波炉加热）+ 鸡胸肉150g（提前备好）"},
+          {time:"21:30",name:"睡前餐",items:"鸡蛋2个 + 豆干80g（慢蛋白，不加碳水）"}
+        ],
+        exercises:[
+          {name:"杠铃深蹲",sets:"5组 × 5rep（85% 1RM，主力动作）"},
+          {name:"腿举",sets:"4组 × 10rep"},
+          {name:"罗马尼亚硬拉",sets:"4组 × 8rep"},
+          {name:"保加利亚分腿蹲",sets:"3组 × 10rep 每侧"},
+          {name:"腿弯举",sets:"3组 × 12rep"},
+          {name:"臀推（杠铃）",sets:"4组 × 10rep"}
+        ],
+        tip:"腿日是全周最高消耗，高碳最值。午餐吃够是关键，不要因为怕犯困就省。训后30分钟内红薯+鸡胸必须吃，提前备好放包里或冰箱。"
+      },
+      {
+        label:"周二",name:"背 + 二头",carb:"high",type:"工作日晚练",
+        cal:2500,pro:185,carb_g:315,fat:52,
+        meals:[
+          {time:"07:30",name:"早餐",items:"燕麦80g + 鸡蛋3个 + 红薯100g（可代替香蕉）"},
+          {time:"12:00",name:"午餐（训前主餐）",items:"糙米饭200g + 鸡胸肉150g + 蔬菜200g"},
+          {time:"17:30",name:"出发前小补",items:"香蕉1根 或 椰枣3-4颗"},
+          {time:"18:00",name:"训练",items:"背 + 二头 大重量日"},
+          {time:"20:15",name:"训后30min内",items:"红薯150g + 金枪鱼罐头150g（方便快速）"},
+          {time:"21:30",name:"睡前餐",items:"鸡蛋2个 + 北豆腐100g"}
+        ],
+        exercises:[
+          {name:"引体向上（加重）",sets:"5组 × 6-8rep（背部厚度核心动作）"},
+          {name:"杠铃划船",sets:"4组 × 8rep"},
+          {name:"坐姿绳索划船",sets:"3组 × 12rep"},
+          {name:"单臂哑铃划船",sets:"3组 × 10rep 每侧"},
+          {name:"杠铃弯举",sets:"3组 × 10rep"},
+          {name:"锤式弯举",sets:"3组 × 12rep"}
+        ],
+        tip:"引体向上是背部厚度的核心，能加重就加重，做不了加重版就做到每组力竭。高碳撑着，今天的训练质量会很好。"
+      },
+      {
+        label:"周三",name:"肩 + 腹",carb:"mid",type:"工作日晚练",
+        cal:2100,pro:185,carb_g:205,fat:62,
+        meals:[
+          {time:"07:30",name:"早餐",items:"燕麦60g + 鸡蛋3个 + 苹果/橙子1个"},
+          {time:"12:00",name:"午餐",items:"糙米饭120g + 猪里脊/鸡胸130g + 蔬菜200g"},
+          {time:"17:30",name:"出发前",items:"少量坚果10-15粒（杏仁/核桃），或小香蕉半根"},
+          {time:"18:00",name:"训练",items:"肩 + 腹日"},
+          {time:"20:15",name:"训后30min内",items:"红薯100g + 鸡胸肉130g"},
+          {time:"21:30",name:"睡前餐",items:"鸡蛋2个 + 豆干80g"}
+        ],
+        exercises:[
+          {name:"哑铃肩推 / 史密斯机",sets:"4组 × 10rep"},
+          {name:"侧平举",sets:"4组 × 15rep（感受肌肉，不追重量）"},
+          {name:"面拉 Face Pull",sets:"4组 × 15rep（保护肩袖，必做）"},
+          {name:"悬挂举腿",sets:"4组 × 15rep"},
+          {name:"负重卷腹",sets:"4组 × 20rep"},
+          {name:"平板支撑",sets:"3组 × 45-60秒"},
+          {name:"俄罗斯转体",sets:"3组 × 20rep（每侧10）"}
+        ],
+        tip:"中碳日，肩和腹的组合训练量不小但强度中等，不需要太多糖原。腹肌每组做到感受到灼烧感，比堆组数更有效。"
+      },
+      {
+        label:"周四",name:"胸 + 三头",carb:"low",type:"工作日晚练",
+        cal:1800,pro:185,carb_g:90,fat:72,
+        meals:[
+          {time:"07:30",name:"早餐",items:"鸡蛋4个（2全蛋+2蛋白）+ 牛油果半个 + 燕麦30g（少量）"},
+          {time:"12:00",name:"午餐",items:"三文鱼150g + 糙米饭80g（少量）+ 大量蔬菜（菠菜/西兰花）+ 橄榄油"},
+          {time:"17:30",name:"出发前",items:"少量坚果或直接空腹去（低碳日可以）"},
+          {time:"18:00",name:"训练",items:"胸 + 三头日"},
+          {time:"20:15",name:"训后30min内",items:"红薯50g + 鸡胸肉150g（低碳日训后仍补少量糖原保肌）"},
+          {time:"21:30",name:"睡前餐",items:"鸡蛋2个 + 豆腐100g"}
+        ],
+        exercises:[
+          {name:"杠铃卧推",sets:"5组 × 6rep（85% 1RM，重量日）"},
+          {name:"上斜哑铃推",sets:"4组 × 10rep"},
+          {name:"蝴蝶机夹胸 / 哑铃飞鸟",sets:"3组 × 12rep"},
+          {name:"窄距卧推",sets:"3组 × 10rep"},
+          {name:"绳索下压",sets:"4组 × 12rep"},
+          {name:"双杠臂屈伸",sets:"3组 × 至力竭"}
+        ],
+        tip:"低碳日胸训练完全没问题，胸肌体积小，局部糖原够用。训后50g红薯是底线，不能省，防止夜间分解肌肉。脂肪从牛油果和橄榄油来。"
+      },
+      {
+        label:"周五",name:"休息 / 有氧",carb:"low",type:"工作日",
+        cal:1750,pro:185,carb_g:80,fat:72,
+        meals:[
+          {time:"07:30",name:"早餐",items:"鸡蛋3个 + 牛油果半个 + 黄瓜/番茄"},
+          {time:"12:00",name:"午餐",items:"金枪鱼罐头150g + 糙米饭50g（少量）+ 大量蔬菜"},
+          {time:"15:00",name:"下午（可选）",items:"若有时间做30-40分钟LISS有氧；工作繁忙可跳过"},
+          {time:"19:00",name:"晚餐",items:"三文鱼130g / 虾200g + 西兰花+菠菜200g + 橄榄油10ml"},
+          {time:"21:30",name:"睡前餐",items:"豆干80g + 鸡蛋1个"}
+        ],
+        exercises:[
+          {name:"LISS有氧（可选）",sets:"快走/骑车/椭圆机，30-40分钟，心率120-135bpm"},
+          {name:"泡沫轴放松",sets:"腿部、背部各5分钟"},
+          {name:"全身静态拉伸",sets:"15-20分钟，重点拉腿和背"}
+        ],
+        tip:"纯恢复日，不做力量训练。这天糖原清空是为了周末高碳腿日做准备。LISS有氧可做可不做，视当天疲劳程度决定。"
+      },
+      {
+        label:"周六",name:"腿 + 臀（延续）",carb:"high",type:"周末下午练",
+        cal:2500,pro:185,carb_g:330,fat:50,
+        meals:[
+          {time:"08:00",name:"早餐",items:"燕麦80g + 鸡蛋3个 + 香蕉1根"},
+          {time:"11:00",name:"加餐",items:"糙米饭100g + 鸡胸肉120g（周末有时间，可以正式加餐）"},
+          {time:"13:30",name:"午餐（训前2小时）",items:"糙米饭150g + 瘦牛肉150g + 蔬菜200g"},
+          {time:"15:30",name:"训练",items:"腿臀 / 或补练本周落下的肌群"},
+          {time:"17:00",name:"训后30min内",items:"红薯200g + 鸡胸肉150g"},
+          {time:"19:30",name:"晚餐",items:"糙米饭100g + 三文鱼150g + 绿叶蔬菜"},
+          {time:"21:30",name:"睡前餐",items:"鸡蛋2个 + 豆干80g"}
+        ],
+        exercises:[
+          {name:"杠铃深蹲",sets:"5组 × 5rep"},
+          {name:"腿举",sets:"4组 × 10rep"},
+          {name:"罗马尼亚硬拉",sets:"4组 × 8rep"},
+          {name:"保加利亚分腿蹲",sets:"3组 × 10rep 每侧"},
+          {name:"腿弯举",sets:"3组 × 12rep"},
+          {name:"臀推",sets:"4组 × 10rep"}
+        ],
+        tip:"周末下午练最舒服，有时间做正式加餐，训练前2小时正餐，状态会比工作日晚练好很多。可以在这天尝试突破重量。"
+      },
+      {
+        label:"周日",name:"完全休息",carb:"rest",type:"休息日",
+        cal:1700,pro:185,carb_g:70,fat:70,
+        meals:[
+          {time:"08:30",name:"早餐",items:"鸡蛋3个 + 牛油果半个 + 燕麦30g"},
+          {time:"12:00",name:"午餐",items:"三文鱼150g + 蔬菜大量 + 少量糙米60g"},
+          {time:"15:00",name:"加餐（可选）",items:"豆干80g + 黄瓜"},
+          {time:"19:00",name:"晚餐",items:"虾200g / 鸡胸肉150g + 西兰花+菠菜 + 橄榄油"},
+          {time:"21:30",name:"睡前",items:"鸡蛋2个"}
+        ],
+        exercises:[
+          {name:"完全不训练",sets:"身体和神经系统完整恢复"},
+          {name:"轻度散步（可选）",sets:"30分钟，纯放松，不追心率"},
+          {name:"备餐",sets:"周日备好周一二的鸡胸和红薯，工作日不手忙脚乱"}
+        ],
+        tip:"这天热量最低，碳水也最少。重点是恢复。周日下午把下周的鸡胸肉批量煮好、红薯蒸好，放冰箱，工作日训后2分钟微波加热就能吃，这个习惯非常重要。"
+      }
+    ];
+
+    function bc(c){return c==='high'?'bh':c==='mid'?'bm':c==='low'?'bl':'bw'}
+    function bl2(c){return c==='high'?'高碳':c==='mid'?'中碳':c==='low'?'低碳':'休整'}
+    let sel=0;
+
+    function updateHero(d){
+      const map = {high:'高碳日', mid:'中碳日', low:'低碳日', rest:'休整日'};
+      document.getElementById('hero-day').textContent = `${d.label} · ${d.name}`;
+      document.getElementById('hero-sub').textContent = `${d.type} · 当前选中日`;
+      document.getElementById('hero-badge').textContent = map[d.carb];
+      document.getElementById('hero-cal').textContent = d.cal;
+      document.getElementById('hero-pro').textContent = d.pro;
+      document.getElementById('hero-carb').textContent = d.carb_g;
+      document.getElementById('hero-fat').textContent = d.fat;
+      document.getElementById('hero-type').textContent = d.type;
+      document.getElementById('hero-tip-short').textContent = d.tip.slice(0, 18) + (d.tip.length > 18 ? '…' : '');
+    }
+
+    function renderGrid(){
+      document.getElementById('wgrid').innerHTML=days.map((d,i)=>`
+        <div class="dc ${i===sel?'sel':''}" onclick="pick(${i})">
+          <div class="dlabel">${d.label}</div>
+          <div class="dname">${d.name}</div>
+          <span class="badge ${bc(d.carb)}">${bl2(d.carb)}</span>
+        </div>`).join('');
+    }
+
+    function renderPanel(){
+      const d=days[sel];
+      updateHero(d);
+      document.getElementById('dpanel').innerHTML=`
+        <div class="phead">
+          <div class="p-left">
+            <span class="ptitle">${d.name}</span>
+            <span class="badge ${bc(d.carb)}">${bl2(d.carb)}</span>
+            <span class="wtype">${d.type}</span>
+          </div>
+          <div class="chip">今日执行重点：<strong>${d.carb==='high'?'训练前后补给优先':d.carb==='mid'?'维持训练质量与平衡':'恢复和控脂优先'}</strong></div>
+        </div>
+        <div class="mgrid">
+          <div class="mc"><div class="ml">热量</div><div class="mv">${d.cal}<span class="mu"> kcal</span></div></div>
+          <div class="mc"><div class="ml">蛋白质</div><div class="mv">${d.pro}<span class="mu"> g</span></div></div>
+          <div class="mc"><div class="ml">碳水</div><div class="mv">${d.carb_g}<span class="mu"> g</span></div></div>
+          <div class="mc"><div class="ml">脂肪</div><div class="mv">${d.fat}<span class="mu"> g</span></div></div>
+        </div>
+        <div class="split">
+          <div class="block">
+            <div class="section-title">
+              <div class="name">饮食安排</div>
+              <div class="desc">按时间顺序执行</div>
+            </div>
+            <div class="mlist">${d.meals.map(m=>`
+              <div class="mrow">
+                <div class="mtime">${m.time}</div>
+                <div class="mcontent">
+                  <div class="mname">${m.name}</div>
+                  <div class="mitems">${m.items}</div>
+                </div>
+              </div>`).join('')}
+            </div>
+          </div>
+          <div class="block">
+            <div class="section-title">
+              <div class="name">训练安排</div>
+              <div class="desc">组数、次数与要点</div>
+            </div>
+            <div class="elist">${d.exercises.map(e=>`
+              <div class="erow">
+                <span class="en">${e.name}</span>
+                <span class="es">${e.sets}</span>
+              </div>`).join('')}
+            </div>
+          </div>
+        </div>
+        <div class="tip">${d.tip}</div>
+        <button class="askbtn" onclick="sendPrompt('详细解释${d.name}的训练动作要领和注意事项')">详解这天的训练动作 ↗</button>
+      `;
+    }
+
+    function pick(i){
+      sel=i;
+      renderGrid();
+      renderPanel();
+    }
+
+    function switchTab(t){
+      const tabs=['plan','macro','food','notes'];
+      tabs.forEach(id=>{
+        document.getElementById('t-'+id).classList.toggle('active', id===t);
+      });
+      document.querySelectorAll('.tab').forEach((el,i)=>{
+        el.classList.toggle('on', tabs[i]===t);
+      });
+      window.scrollTo({top:0, behavior:'smooth'});
+    }
+
+    function sendPrompt(text){
+      if (typeof window.parent !== 'undefined' && window.parent !== window) {
+        try { window.parent.postMessage({type:'prompt', text}, '*'); } catch (e) {}
+      }
+      console.log(text);
+      alert(text);
+    }
+
+    renderGrid();
+    renderPanel();
+  </script>
+</body>
+</html>
